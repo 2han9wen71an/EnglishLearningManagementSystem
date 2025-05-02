@@ -14,45 +14,54 @@
     <div class="top-right">
         <div class="header-menu">
             <div class="header-left">
-                <div class="dropdown for-notification">
+                <span style="margin-right: 10px;">尊敬的<b>[[${session.loginUser.getUserName()}]]</b>，欢迎您的到来！</span>
 
-                    <a>尊敬的<b>[[${session.loginUser.getUserName()}]]</b>，欢迎您的到来！  </a>
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="notification" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <!-- 使用纯HTML的下拉菜单结构 -->
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="fa fa-user"></i>
-                    </button>
-
-                    <div class="dropdown-menu" aria-labelledby="notification">
-                        <p class="red">控制中心</p>
-                        <a class="dropdown-item media" th:href="@{/toAdmin}">
-                            <i class="fa fa-user-secret"></i>
-                            <p>管理员</p>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <div class="dropdown-header">控制中心</div>
+                        <a class="dropdown-item" th:href="@{/toAdmin}">
+                            <i class="fa fa-user-secret"></i> 管理员
                         </a>
-                        <button onclick="UpdateUserName()"  class="dropdown-item media" >
-                            <i class="fa fa-cog" ></i>
-                            <p>修改名字</p>
-                        </button>
-                    <!--利用弹出框来修改名字-->
-                        <script>
-                            var oldname='[[${session.loginUser.getUserName()}]]';
-                            function UpdateUserName() {
-                                console.log(oldname);
-                                var newname = prompt("请修改您的名字：", "");
-                                if (newname == null || newname == "") {
-                                    false ;
-                                } else {
-                                    window.location.href="/getStringParam/"+newname;
-                                }
-                            }
-                        </script>
-
-                        <a class="dropdown-item media" th:href="@{/logout}">
-                            <i class="fa fa-power-off"></i>
-                            <p>退出登录</p>
+                        <a class="dropdown-item" href="javascript:void(0);" onclick="UpdateUserName()">
+                            <i class="fa fa-cog"></i> 修改名字
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" th:href="@{/logout}">
+                            <i class="fa fa-power-off"></i> 退出登录
                         </a>
                     </div>
                 </div>
+
+                <!-- 修改名字的脚本 -->
+                <script>
+                    function UpdateUserName() {
+                        var oldname='[[${session.loginUser.getUserName()}]]';
+                        console.log(oldname);
+                        var newname = prompt("请修改您的名字：", "");
+                        if (newname == null || newname == "") {
+                            return false;
+                        } else {
+                            window.location.href="/getStringParam/"+newname;
+                        }
+                    }
+                </script>
             </div>
         </div>
     </div>
+
+    <!-- 确保Bootstrap下拉菜单正常工作 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 确保所有下拉菜单正常工作
+            if (typeof jQuery !== 'undefined') {
+                // 手动初始化所有下拉菜单
+                jQuery('[data-toggle="dropdown"]').dropdown();
+            }
+        });
+    </script>
 </header >
 </html>

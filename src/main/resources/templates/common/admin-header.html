@@ -15,26 +15,37 @@
     <div class="top-right">
         <div class="header-menu">
             <div class="header-left">
-                <div class="dropdown for-notification">
-                    管理员您好！
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="notification" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa fa-user-secret"></i>
-                    </button>
+                <span style="margin-right: 10px;">管理员您好！</span>
 
-                    <div class="dropdown-menu" aria-labelledby="notification">
-                        <p class="red">控制中心</p>
-                        <a class="dropdown-item media" th:href="@{/main.html}">
-                            <i class="f fa fa-user"></i>
-                            <p>普通用户</p>
+                <!-- 使用纯HTML的下拉菜单结构 -->
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-user-secret"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <div class="dropdown-header">控制中心</div>
+                        <a class="dropdown-item" th:href="@{/main.html}">
+                            <i class="fa fa-user"></i> 普通用户
                         </a>
-                        <a class="dropdown-item media" th:href="@{/logout}">
-                            <i class="fa fa-power-off"></i>
-                            <p>退出登录</p>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" th:href="@{/logout}">
+                            <i class="fa fa-power-off"></i> 退出登录
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- 确保Bootstrap下拉菜单正常工作 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 确保所有下拉菜单正常工作
+            if (typeof jQuery !== 'undefined') {
+                // 手动初始化所有下拉菜单
+                jQuery('[data-toggle="dropdown"]').dropdown();
+            }
+        });
+    </script>
 </header >
 </html>
