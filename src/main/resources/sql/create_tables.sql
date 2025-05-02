@@ -107,22 +107,6 @@ INSERT INTO `word` (`wordName`, `audio`, `explanation`, `example`, `grade`, `stu
 ('accountability', '/əˌkaʊntəˈbɪləti/', 'n. 责任，义务', 'There must be accountability for these mistakes.', 2, 0, 0, 0),
 ('accumulate', '/əˈkjuːmjəleɪt/', 'v. 积累，积聚', 'He accumulated a lot of wealth over the years.', 2, 0, 0, 0);
 
--- 初始化单词数据 (雅思)
-INSERT INTO `word` (`wordName`, `audio`, `explanation`, `example`, `grade`, `study`, `remember`, `collection`) VALUES
-('aesthetic', '/iːsˈθetɪk/', 'adj. 审美的，美学的', 'The building has great aesthetic appeal.', 3, 0, 0, 0),
-('affinity', '/əˈfɪnəti/', 'n. 亲和力，吸引力', 'She has a natural affinity for languages.', 3, 0, 0, 0),
-('aggregate', '/ˈæɡrɪɡət/', 'v. 合计，总计', 'The company\'s aggregate sales exceeded expectations.', 3, 0, 0, 0),
-('alleviate', '/əˈliːvieɪt/', 'v. 减轻，缓解', 'The medicine should alleviate the pain.', 3, 0, 0, 0),
-('ambiguous', '/æmˈbɪɡjuəs/', 'adj. 模糊的，不明确的', 'His answer was ambiguous and confusing.', 3, 0, 0, 0);
-
--- 初始化单词数据 (托福)
-INSERT INTO `word` (`wordName`, `audio`, `explanation`, `example`, `grade`, `study`, `remember`, `collection`) VALUES
-('anomaly', '/əˈnɒməli/', 'n. 异常，反常', 'The data showed an anomaly that needed investigation.', 4, 0, 0, 0),
-('anticipate', '/ænˈtɪsɪpeɪt/', 'v. 预期，预料', 'We anticipate strong growth in the next quarter.', 4, 0, 0, 0),
-('arbitrary', '/ˈɑːbɪtrəri/', 'adj. 任意的，武断的', 'The decision seemed arbitrary and unfair.', 4, 0, 0, 0),
-('articulate', '/ɑːˈtɪkjuleɪt/', 'v. 清晰地表达', 'She can articulate her ideas very well.', 4, 0, 0, 0),
-('assimilate', '/əˈsɪmɪleɪt/', 'v. 吸收，同化', 'It takes time to assimilate new information.', 4, 0, 0, 0);
-
 -- 初始化句子数据
 INSERT INTO `sentence` (`sentenceName`, `explain`) VALUES
 ('The best preparation for tomorrow is doing your best today.', '对明天最好的准备就是今天做到最好。'),
