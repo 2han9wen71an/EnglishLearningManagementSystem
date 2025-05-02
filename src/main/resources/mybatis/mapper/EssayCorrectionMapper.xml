@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.EssayCorrectionMapper">
+    <!-- 添加批改结果 -->
+    <insert id="addCorrection" parameterType="EssayCorrection" useGeneratedKeys="true" keyProperty="correctionId">
+        insert into essay_correction (essay_id, corrected_content, grammar_errors, vocabulary_suggestions, structure_comments, overall_score, correction_time)
+        values (#{essayId}, #{correctedContent}, #{grammarErrors}, #{vocabularySuggestions}, #{structureComments}, #{overallScore}, #{correctionTime})
+    </insert>
+    
+    <!-- 删除批改结果 -->
+    <delete id="deleteCorrection" parameterType="Integer">
+        delete from essay_correction where correction_id = #{correctionId}
+    </delete>
+    
+    <!-- 更新批改结果 -->
+    <update id="updateCorrection" parameterType="EssayCorrection">
+        update essay_correction
+        set corrected_content = #{correctedContent},
+            grammar_errors = #{grammarErrors},
+            vocabulary_suggestions = #{vocabularySuggestions},
+            structure_comments = #{structureComments},
+            overall_score = #{overallScore}
+        where correction_id = #{correctionId}
+    </update>
+    
+    <!-- 根据ID查询批改结果 -->
+    <select id="queryCorrectionById" resultMap="correctionResultMap">
+        select c.*, e.*
+        from essay_correction c
+        left join essay e on c.essay_id = e.essay_id
+        where c.correction_id = #{correctionId}
+    </select>
+    
+    <!-- 根据作文ID查询批改结果 -->
+    <select id="queryCorrectionByEssayId" resultMap="correctionResultMap">
+        select c.*, e.*
+        from essay_correction c
+        left join essay e on c.essay_id = e.essay_id
+        where c.essay_id = #{essayId}
+    </select>
+    
+    <!-- 查询所有批改结果 -->
+    <select id="queryAllCorrections" resultMap="correctionResultMap">
+        select c.*, e.*
+        from essay_correction c
+        left join essay e on c.essay_id = e.essay_id
+        order by c.correction_time desc
+    </select>
+    
+    <!-- 结果映射 -->
+    <resultMap id="correctionResultMap" type="EssayCorrection">
+        <id property="correctionId" column="correction_id"/>
+        <result property="essayId" column="essay_id"/>
+        <result property="correctedContent" column="corrected_content"/>
+        <result property="grammarErrors" column="grammar_errors"/>
+        <result property="vocabularySuggestions" column="vocabulary_suggestions"/>
+        <result property="structureComments" column="structure_comments"/>
+        <result property="overallScore" column="overall_score"/>
+        <result property="correctionTime" column="correction_time"/>
+        <association property="essay" javaType="Essay">
+            <id property="essayId" column="essay_id"/>
+            <result property="userId" column="user_id"/>
+            <result property="title" column="title"/>
+            <result property="content" column="content"/>
+            <result property="submitTime" column="submit_time"/>
+            <result property="status" column="status"/>
+        </association>
+    </resultMap>
+</mapper>

@@ -19,12 +19,20 @@
                 </li>
                 <li class="menu-item-has-children dropdown">
                     <a th:href="@{/admin/viewUser}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-user"></i>用户管理</a>
-
+                </li>
+                <li class="menu-item-has-children dropdown">
+                    <a th:href="@{/admin/viewAllEssays}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-pencil"></i>作文管理</a>
+                </li>
+                <li class="menu-item-has-children dropdown">
+                    <a th:href="@{/admin/viewAllAssessments}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-microphone"></i>发音评测管理</a>
                 </li>
 
                 <li class="menu-title">系统工具</li><!-- /.menu-title -->
                 <li class="menu-item-has-children dropdown">
                     <a th:href="@{/admin/initDialogueDatabase}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-database"></i>初始化情景对话数据</a>
+                </li>
+                <li class="menu-item-has-children dropdown">
+                    <a th:href="@{/admin/initEssayPronunciationDatabase}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-database"></i>初始化作文发音数据</a>
                 </li>
 
                 <li class="menu-title">个人中心</li><!-- /.menu-title -->

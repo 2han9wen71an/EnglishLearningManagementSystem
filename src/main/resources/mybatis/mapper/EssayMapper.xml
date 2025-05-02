@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.EssayMapper">
+    <!-- 添加作文 -->
+    <insert id="addEssay" parameterType="Essay" useGeneratedKeys="true" keyProperty="essayId">
+        insert into essay (user_id, title, content, submit_time, status)
+        values (#{userId}, #{title}, #{content}, #{submitTime}, #{status})
+    </insert>
+    
+    <!-- 删除作文 -->
+    <delete id="deleteEssay" parameterType="Integer">
+        delete from essay where essay_id = #{essayId}
+    </delete>
+    
+    <!-- 更新作文 -->
+    <update id="updateEssay" parameterType="Essay">
+        update essay
+        set title = #{title},
+            content = #{content},
+            status = #{status}
+        where essay_id = #{essayId}
+    </update>
+    
+    <!-- 更新作文状态 -->
+    <update id="updateEssayStatus">
+        update essay
+        set status = #{status}
+        where essay_id = #{essayId}
+    </update>
+    
+    <!-- 根据ID查询作文 -->
+    <select id="queryEssayById" resultType="Essay">
+        select e.*, u.userName
+        from essay e
+        left join user u on e.user_id = u.userId
+        where e.essay_id = #{essayId}
+    </select>
+    
+    <!-- 查询用户的所有作文 -->
+    <select id="queryEssaysByUserId" resultType="Essay">
+        select e.*, u.userName
+        from essay e
+        left join user u on e.user_id = u.userId
+        where e.user_id = #{userId}
+        order by e.submit_time desc
+    </select>
+    
+    <!-- 查询所有作文 -->
+    <select id="queryAllEssays" resultType="Essay">
+        select e.*, u.userName
+        from essay e
+        left join user u on e.user_id = u.userId
+        order by e.submit_time desc
+    </select>
+</mapper>

@@ -23,7 +23,7 @@
     <!-- Header-->
     <div th:replace="common/admin-header::header"/>
     <!-- /#header -->
-    
+
     <!-- Content -->
     <div class="content">
         <div class="animated fadeIn">
@@ -38,7 +38,7 @@
                             <div class="alert alert-success" th:if="${success}">
                                 <i class="fa fa-check-circle"></i> <span th:text="${message}">操作成功</span>
                             </div>
-                            
+
                             <!-- 错误消息 -->
                             <div class="alert alert-danger" th:if="${error}">
                                 <i class="fa fa-exclamation-circle"></i> <span th:text="${error}">操作失败</span>
@@ -46,10 +46,12 @@
                                     <p>已成功执行 <span th:text="${successCount}">0</span> 条SQL语句，共 <span th:text="${totalCount}">0</span> 条。</p>
                                 </div>
                             </div>
-                            
+
                             <div class="mt-4">
                                 <a th:href="@{/admin/main}" class="btn btn-primary">返回管理首页</a>
                                 <a th:href="@{/viewDialogueScenarios}" class="btn btn-success ml-2">查看情景对话</a>
+                                <a th:href="@{/viewEssays}" class="btn btn-info ml-2">查看作文</a>
+                                <a th:href="@{/viewPronunciation}" class="btn btn-warning ml-2">查看发音评测</a>
                             </div>
                         </div>
                     </div>
@@ -58,7 +60,7 @@
         </div>
     </div>
     <!-- /.content -->
-    
+
     <div class="clearfix"></div>
     <!-- Footer -->
     <div th:replace="common/footer::footer"/>

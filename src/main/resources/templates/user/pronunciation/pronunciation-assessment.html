@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>语音评测</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.0/normalize.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pixeden-stroke-7-icon@1.2.3/pe-icon-7-stroke/dist/pe-icon-7-stroke.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.0/css/flag-icon.min.css">
+    <link rel="stylesheet" th:href="@{/static/css/cs-skin-elastic.css}">
+    <link rel="stylesheet" th:href="@{/static/css/style.css}">
+<style>
+    .recording-indicator {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: red;
+        margin-right: 10px;
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .phoneme-error {
+        background-color: #ffdddd;
+        padding: 2px;
+        border-radius: 3px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .phoneme-tooltip {
+        display: none;
+        position: absolute;
+        background-color: #333;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 4px;
+        z-index: 100;
+        width: 250px;
+        top: 100%;
+        left: 0;
+    }
+
+    .phoneme-error:hover .phoneme-tooltip {
+        display: block;
+    }
+
+    .score-display {
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .score-circle {
+        display: inline-block;
+        width: 80px;
+        height: 80px;
+        line-height: 80px;
+        border-radius: 50%;
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .audio-player {
+        margin: 20px 0;
+    }
+
+    .assessment-result {
+        display: none;
+        margin-top: 30px;
+        border-top: 1px solid #ddd;
+        padding-top: 20px;
+    }
+</style>
+<body>
+<div th:replace="common/leftbar::leftbar"/>
+<div id="right-panel" class="right-panel">
+    <div th:replace="common/header::header"/>
+    <div class="breadcrumbs">
+        <div class="col-sm-4">
+            <div class="page-header float-left">
+                <div class="page-title">
+                    <h1>语音评测</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="page-header float-right">
+                <div class="page-title">
+                    <ol class="breadcrumb text-right">
+                        <li class="active">语音实时评测</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content mt-3">
+        <div class="animated fadeIn">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong class="card-title">语音发音评测</strong>
+                            <a href="/viewPronunciationHistory" class="btn btn-info float-right">
+                                <i class="fa fa-history"></i> 查看历史记录
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info">
+                                        <i class="fa fa-info-circle"></i> 请选择或输入要评测的文本，然后点击"开始录音"按钮进行发音。系统将分析您的发音并提供详细反馈。
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="assessmentText">评测文本</label>
+                                        <select id="sampleText" class="form-control mb-2">
+                                            <option value="">-- 选择示例文本 --</option>
+                                            <option value="The quick brown fox jumps over the lazy dog.">The quick brown fox jumps over the lazy dog.</option>
+                                            <option value="She sells seashells by the seashore.">She sells seashells by the seashore.</option>
+                                            <option value="How much wood would a woodchuck chuck if a woodchuck could chuck wood?">How much wood would a woodchuck chuck if a woodchuck could chuck wood?</option>
+                                            <option value="I thought I would think about the theory of thermodynamics.">I thought I would think about the theory of thermodynamics.</option>
+                                            <option value="Very few vehicles are available for rent.">Very few vehicles are available for rent.</option>
+                                        </select>
+                                        <textarea id="assessmentText" class="form-control" rows="4" placeholder="输入或选择要评测的文本"></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <button id="startRecordBtn" class="btn btn-danger">
+                                            <i class="fa fa-microphone"></i> 开始录音
+                                        </button>
+                                        <button id="stopRecordBtn" class="btn btn-secondary" disabled>
+                                            <i class="fa fa-stop"></i> 停止录音
+                                        </button>
+                                        <button id="playRecordingBtn" class="btn btn-info" disabled>
+                                            <i class="fa fa-play"></i> 播放录音
+                                        </button>
+                                        <button id="submitBtn" class="btn btn-primary" disabled>
+                                            <i class="fa fa-check"></i> 提交评测
+                                        </button>
+                                        <span id="recordingStatus" class="ml-3"></span>
+                                    </div>
+
+                                    <div id="audioPlayerContainer" class="audio-player" style="display: none;">
+                                        <audio id="audioPlayer" controls></audio>
+                                    </div>
+
+                                    <div id="assessmentResult" class="assessment-result">
+                                        <div class="score-display">
+                                            <div id="scoreCircle" class="score-circle">0</div>
+                                            <p>发音评分</p>
+                                        </div>
+
+                                        <h4>发音问题</h4>
+                                        <div id="phonemeErrors">
+                                            <table class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>单词</th>
+                                                        <th>正确音素</th>
+                                                        <th>您的错误</th>
+                                                        <th>改进建议</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="phonemeErrorsBody">
+                                                    <!-- 动态填充 -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="text-center mt-4">
+                                            <button id="retryBtn" class="btn btn-primary">
+                                                <i class="fa fa-refresh"></i> 重新录音
+                                            </button>
+                                            <a href="/viewPronunciationHistory" class="btn btn-info ml-2">
+                                                <i class="fa fa-history"></i> 查看历史记录
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="common/footer::footer"/>
+
+<script>
+    jQuery(document).ready(function($) {
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+        let audioUrl;
+
+        // 示例文本选择
+        $('#sampleText').change(function() {
+            const selectedText = $(this).val();
+            if (selectedText) {
+                $('#assessmentText').val(selectedText);
+            }
+        });
+
+        // 开始录音
+        $('#startRecordBtn').click(function() {
+            const text = $('#assessmentText').val().trim();
+            if (!text) {
+                alert('请先输入或选择要评测的文本');
+                return;
+            }
+
+            // 检查浏览器支持
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('您的浏览器不支持录音功能。请使用Chrome、Firefox或Edge浏览器。');
+                return;
+            }
+
+            // 请求麦克风权限
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    // 重置
+                    audioChunks = [];
+
+                    // 创建MediaRecorder
+                    mediaRecorder = new MediaRecorder(stream);
+
+                    // 收集录音数据
+                    mediaRecorder.ondataavailable = function(e) {
+                        audioChunks.push(e.data);
+                    };
+
+                    // 录音结束处理
+                    mediaRecorder.onstop = function() {
+                        // 创建音频Blob
+                        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        audioUrl = URL.createObjectURL(audioBlob);
+
+                        // 设置音频播放器
+                        $('#audioPlayer').attr('src', audioUrl);
+                        $('#audioPlayerContainer').show();
+
+                        // 启用相关按钮
+                        $('#playRecordingBtn').prop('disabled', false);
+                        $('#submitBtn').prop('disabled', false);
+
+                        // 更新状态
+                        $('#recordingStatus').html('录音完成');
+                    };
+
+                    // 开始录音
+                    mediaRecorder.start();
+
+                    // 更新UI
+                    $('#startRecordBtn').prop('disabled', true);
+                    $('#stopRecordBtn').prop('disabled', false);
+                    $('#recordingStatus').html('<span class="recording-indicator"></span>正在录音...');
+                })
+                .catch(function(err) {
+                    alert('无法访问麦克风: ' + err.message);
+                });
+        });
+
+        // 停止录音
+        $('#stopRecordBtn').click(function() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+
+                // 停止所有音轨
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
+                // 更新UI
+                $('#startRecordBtn').prop('disabled', false);
+                $('#stopRecordBtn').prop('disabled', true);
+            }
+        });
+
+        // 播放录音
+        $('#playRecordingBtn').click(function() {
+            $('#audioPlayer')[0].play();
+        });
+
+        // 提交评测
+        $('#submitBtn').click(function() {
+            const text = $('#assessmentText').val().trim();
+            if (!text || !audioBlob) {
+                alert('请先录制音频');
+                return;
+            }
+
+            // 禁用按钮，显示加载状态
+            $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> 评测中...');
+
+            // 将音频转换为Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = function() {
+                const base64Audio = reader.result.split(',')[1]; // 移除前缀
+
+                // 发送到服务器
+                $.ajax({
+                    url: '/submitPronunciation',
+                    type: 'POST',
+                    data: {
+                        content: text,
+                        audioData: base64Audio
+                    },
+                    success: function(response) {
+                        // 恢复按钮状态
+                        $('#submitBtn').prop('disabled', false).html('<i class="fa fa-check"></i> 提交评测');
+
+                        if (response.success) {
+                            // 显示评测结果
+                            displayAssessmentResult(response);
+                        } else {
+                            alert('评测失败: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        $('#submitBtn').prop('disabled', false).html('<i class="fa fa-check"></i> 提交评测');
+                        alert('系统错误，请稍后重试');
+                    }
+                });
+            };
+        });
+
+        // 重新录音
+        $('#retryBtn').click(function() {
+            // 重置UI
+            $('#assessmentResult').hide();
+            $('#startRecordBtn').prop('disabled', false);
+            $('#stopRecordBtn').prop('disabled', true);
+            $('#playRecordingBtn').prop('disabled', true);
+            $('#submitBtn').prop('disabled', true);
+            $('#recordingStatus').html('');
+            $('#audioPlayerContainer').hide();
+        });
+
+        // 显示评测结果
+        function displayAssessmentResult(response) {
+            // 设置分数
+            $('#scoreCircle').text(response.overallScore);
+
+            // 解析音素错误
+            try {
+                const phonemeErrors = JSON.parse(response.phonemeErrors);
+                let phonemeHtml = '';
+
+                phonemeErrors.forEach(function(error) {
+                    phonemeHtml += `
+                        <tr>
+                            <td>${error.word}</td>
+                            <td>${error.correctPhoneme}</td>
+                            <td>${error.userError}</td>
+                            <td>${error.suggestion}</td>
+                        </tr>
+                    `;
+                });
+
+                $('#phonemeErrorsBody').html(phonemeHtml || '<tr><td colspan="4" class="text-center">未发现明显发音问题</td></tr>');
+
+            } catch (e) {
+                console.error('解析评测结果出错:', e);
+                $('#phonemeErrorsBody').html('<tr><td colspan="4" class="text-center">解析结果出错</td></tr>');
+            }
+
+            // 显示结果区域
+            $('#assessmentResult').show();
+        }
+    });
+</script>
+</body>
+</html>
