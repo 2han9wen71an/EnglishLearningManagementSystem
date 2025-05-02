@@ -33,7 +33,7 @@
                         </button>
                     <!--利用弹出框来修改名字-->
                         <script>
-                            var oldname=[[${session.loginUser.getUserName()}]];
+                            var oldname='[[${session.loginUser.getUserName()}]]';
                             function UpdateUserName() {
                                 console.log(oldname);
                                 var newname = prompt("请修改您的名字：", "");
