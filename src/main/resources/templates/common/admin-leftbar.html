@@ -22,8 +22,12 @@
 
                 </li>
 
-                <li class="menu-title">个人中心</li><!-- /.menu-title -->
+                <li class="menu-title">系统工具</li><!-- /.menu-title -->
+                <li class="menu-item-has-children dropdown">
+                    <a th:href="@{/admin/initDialogueDatabase}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-database"></i>初始化情景对话数据</a>
+                </li>
 
+                <li class="menu-title">个人中心</li><!-- /.menu-title -->
                 <li class="menu-item-has-children dropdown">
                     <a th:href="@{/logout}" class="dropdown-toggle"  aria-haspopup="true" aria-expanded="false"> <i class="menu-icon fa fa-level-down"></i>退出</a>
                 </li>

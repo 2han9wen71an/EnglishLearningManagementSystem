@@ -49,4 +49,9 @@ pagehelper:
   supportMethodsArguments: true
   params: count=countSql
 
+# DeepSeek API配置
+deepseek:
+  api:
+    key: sk-031181b730b04d3cb3f563c9e5d0aaa1  # 替换为您的DeepSeek API密钥
+    url: https://api.deepseek.com/v1/chat/completions
 

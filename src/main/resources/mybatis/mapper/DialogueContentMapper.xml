@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.DialogueContentMapper">
+    <!-- 查询对话内容 -->
+    <select id="queryContentById" resultType="DialogueContent">
+        select * from dialogue_content where content_id = #{contentId}
+    </select>
+    
+    <select id="queryContentByScenarioId" resultType="DialogueContent">
+        select * from dialogue_content where scenario_id = #{scenarioId} order by order_num
+    </select>
+    
+    <select id="queryContentByScenarioIdAndOrderNum" resultType="DialogueContent">
+        select * from dialogue_content where scenario_id = #{scenarioId} and order_num = #{orderNum}
+    </select>
+    
+    <!-- 添加对话内容 -->
+    <insert id="addContent" parameterType="DialogueContent">
+        insert into dialogue_content (scenario_id, role, content, prompt, order_num)
+        values (#{scenarioId}, #{role}, #{content}, #{prompt}, #{orderNum})
+    </insert>
+    
+    <!-- 更新对话内容 -->
+    <update id="updateContent" parameterType="DialogueContent">
+        update dialogue_content
+        set scenario_id = #{scenarioId},
+            role = #{role},
+            content = #{content},
+            prompt = #{prompt},
+            order_num = #{orderNum}
+        where content_id = #{contentId}
+    </update>
+    
+    <!-- 删除对话内容 -->
+    <delete id="deleteContent" parameterType="Integer">
+        delete from dialogue_content where content_id = #{contentId}
+    </delete>
+    
+    <delete id="deleteContentByScenarioId" parameterType="Integer">
+        delete from dialogue_content where scenario_id = #{scenarioId}
+    </delete>
+</mapper>

@@ -69,6 +69,20 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- DeepSeek API 集成 -->
+        <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.9.0</version>
+        </dependency>
+        <!-- 使用Spring Boot管理的Jackson版本，不指定具体版本 -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20200518</version>
+        </dependency>
     </dependencies>
 
     <build>
