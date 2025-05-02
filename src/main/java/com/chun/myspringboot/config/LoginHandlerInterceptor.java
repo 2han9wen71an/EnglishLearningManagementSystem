@@ -9,6 +9,15 @@ import javax.servlet.http.HttpServletResponse;
 public class LoginHandlerInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 获取请求的URI
+        String requestURI = request.getRequestURI();
+
+        // 判断是否是静态资源请求
+        if (requestURI.startsWith("/static/")) {
+            // 如果是静态资源，直接放行
+            return true;
+        }
+
         //登录成功之后，应该有用户的session.
         //request.getSession().getAttribute 得到`loginUser`的session
         Object loginUser = request.getSession().getAttribute("loginUser");
