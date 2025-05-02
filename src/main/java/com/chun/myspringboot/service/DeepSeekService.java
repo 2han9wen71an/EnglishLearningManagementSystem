@@ -21,6 +21,9 @@ public class DeepSeekService {
     @Value("${deepseek.api.url:https://api.deepseek.com/v1/chat/completions}")
     private String apiUrl;
 
+    @Value("${deepseek.api.model:deepseek-chat}")
+    private String modelId;
+
     private final OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -46,7 +49,7 @@ public class DeepSeekService {
 
             // 构建请求体
             ObjectNode requestBody = objectMapper.createObjectNode();
-            requestBody.put("model", "deepseek-chat");
+            requestBody.put("model", modelId);
             requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", 1000);
 

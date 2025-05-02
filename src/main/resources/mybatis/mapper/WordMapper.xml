@@ -83,6 +83,11 @@
         select * from word where wordId=#{wordId}
     </select>
 
+    <!--根据单词名称查询单词-->
+    <select id="queryWordByName" resultType="Word">
+        select * from word where wordName=#{wordName} limit 1
+    </select>
+
     <!--
 
        学习功能（从数据库随机查询一个单词）

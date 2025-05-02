@@ -73,6 +73,11 @@ public class WordServiceImpl implements WordService {
         return wordMapper.queryWordById(wordId);
     }
 
+    @Override
+    public Word queryWordByName(String wordName) {
+        return wordMapper.queryWordByName(wordName);
+    }
+
     /**
      * 分页查询收藏内容
      *

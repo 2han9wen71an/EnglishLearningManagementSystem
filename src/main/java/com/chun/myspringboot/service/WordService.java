@@ -60,6 +60,9 @@ public interface WordService {
     //根据ID查询一个单词的信息
     Word queryWordById(Integer wordId);
 
+    //根据单词名称查询单词
+    Word queryWordByName(String wordName);
+
     //分页查询
 
     PageInfo<Word> queryAllCollectionWordByPage(int pageNum, int pageSize);

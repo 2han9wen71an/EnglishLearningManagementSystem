@@ -66,6 +66,9 @@ public interface WordMapper {
     //根据ID查询一个单词的信息
     Word queryWordById(Integer wordId);
 
+    //根据单词名称查询单词
+    Word queryWordByName(String wordName);
+
     /*
        ----------------------------
        学习功能（从数据库随机查询一个单词）

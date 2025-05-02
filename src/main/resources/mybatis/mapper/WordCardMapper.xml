@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.WordCardMapper">
+
+    <!--
+    #######################################################
+                        增加
+    #######################################################
+    -->
+    <!--添加单词卡片-->
+    <insert id="addWordCard" parameterType="WordCard" useGeneratedKeys="true" keyProperty="cardId">
+        insert into word_card(word, explanation, imageUrl, contextSentence, memoryTip, userId, createTime)
+        values (#{word}, #{explanation}, #{imageUrl}, #{contextSentence}, #{memoryTip}, #{userId}, #{createTime})
+    </insert>
+
+    <!--
+    #######################################################
+                        删除
+    #######################################################
+    -->
+    <!--删除单词卡片-->
+    <delete id="deleteWordCard" parameterType="Integer">
+        delete from word_card where cardId=#{cardId}
+    </delete>
+
+    <!--
+    #######################################################
+                        修改
+    #######################################################
+    -->
+    <!--修改单词卡片-->
+    <update id="updateWordCard" parameterType="WordCard">
+        update word_card
+        <set>
+            <if test="word != null">word=#{word},</if>
+            <if test="explanation != null">explanation=#{explanation},</if>
+            <if test="imageUrl != null">imageUrl=#{imageUrl},</if>
+            <if test="contextSentence != null">contextSentence=#{contextSentence},</if>
+            <if test="memoryTip != null">memoryTip=#{memoryTip},</if>
+            <if test="userId != null">userId=#{userId},</if>
+            <if test="createTime != null">createTime=#{createTime}</if>
+        </set>
+        where cardId=#{cardId}
+    </update>
+
+    <!--
+    #######################################################
+                        查询
+    #######################################################
+    -->
+    <!--根据ID查询单词卡片-->
+    <select id="queryWordCardById" resultType="WordCard">
+        select * from word_card where cardId=#{cardId}
+    </select>
+
+    <!--根据单词查询单词卡片-->
+    <select id="queryWordCardByWord" resultType="WordCard">
+        select * from word_card where word=#{word} limit 1
+    </select>
+
+    <!--查询所有单词卡片-->
+    <select id="queryAllWordCards" resultType="WordCard">
+        select * from word_card
+    </select>
+
+    <!--根据用户ID查询单词卡片-->
+    <select id="queryWordCardsByUserId" resultType="WordCard">
+        select * from word_card where userId=#{userId}
+    </select>
+
+</mapper>

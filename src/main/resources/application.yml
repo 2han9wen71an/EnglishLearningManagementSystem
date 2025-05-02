@@ -49,9 +49,17 @@ pagehelper:
   supportMethodsArguments: true
   params: count=countSql
 
-# DeepSeek API配置
+# DeepSeek API配置（用于聊天功能）
 deepseek:
   api:
     key: sk-031181b730b04d3cb3f563c9e5d0aaa1  # 替换为您的DeepSeek API密钥
     url: https://api.deepseek.com/v1/chat/completions
+    model: deepseek-chat  # DeepSeek聊天模型ID
+
+# 硅基流动API配置（用于图像生成）
+siliconflow:
+  api:
+    key: sk-iqbpulsbsuoabenegffgihafnhuvmzapeempkmzsggxwdlac  # 替换为您的硅基流动API密钥
+    url: https://api.siliconflow.cn/v1/images/generations  # 图像生成API URL
+    model: black-forest-labs/FLUX.1-schnell  # 图像生成模型ID
 
