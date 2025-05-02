@@ -6,7 +6,7 @@
     <div class="footer-inner bg-white">
         <div class="row">
             <div class="col-sm-6">
-                Copyright &copy; 2020 Weirdchun
+                Copyright &copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}"></span>
             </div>
         </div>
     </div>
