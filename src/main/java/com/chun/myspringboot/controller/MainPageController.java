@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.util.HtmlUtils;
 
 import javax.servlet.http.HttpSession;
+import java.util.Date;
 
 @Controller
 public class MainPageController {
@@ -27,11 +28,28 @@ public class MainPageController {
 
             //查询最新公告
             Notice notice = noticeService.queryNewNoticeById();
-            model.addAttribute("notice",notice);
+
+            // 如果没有公告，创建一个默认公告
+            if (notice == null) {
+                notice = new Notice();
+                notice.setTitle("欢迎使用英语学习管理系统");
+                notice.setContent("这是一个默认公告。管理员尚未发布任何公告。");
+                notice.setCreatTime(new Date());
+            }
+
+            model.addAttribute("notice", notice);
+
             //随机查询每日一句
             Sentence sentence = sentenceService.queryRandomSentence();
-            model.addAttribute("sentence",sentence);
 
+            // 如果没有句子，创建一个默认句子
+            if (sentence == null) {
+                sentence = new Sentence();
+                sentence.setSentenceName("The best preparation for tomorrow is doing your best today.");
+                sentence.setExplain("对明天最好的准备就是今天做到最好。");
+            }
+
+            model.addAttribute("sentence", sentence);
 
             return "main";
         }
