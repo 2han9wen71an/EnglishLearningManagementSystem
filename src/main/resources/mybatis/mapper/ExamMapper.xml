@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.ExamMapper">
+    <!-- 添加考试 -->
+    <insert id="addExam" parameterType="Exam" useGeneratedKeys="true" keyProperty="examId">
+        INSERT INTO exam (title, description, duration, total_score, pass_score, grade_id, create_time, status)
+        VALUES (#{title}, #{description}, #{duration}, #{totalScore}, #{passScore}, #{gradeId}, #{createTime}, #{status})
+    </insert>
+    
+    <!-- 删除考试 -->
+    <delete id="deleteExam" parameterType="Integer">
+        DELETE FROM exam WHERE exam_id = #{examId}
+    </delete>
+    
+    <!-- 更新考试 -->
+    <update id="updateExam" parameterType="Exam">
+        UPDATE exam
+        SET title = #{title},
+            description = #{description},
+            duration = #{duration},
+            total_score = #{totalScore},
+            pass_score = #{passScore},
+            grade_id = #{gradeId},
+            status = #{status}
+        WHERE exam_id = #{examId}
+    </update>
+    
+    <!-- 根据ID查询考试 -->
+    <select id="queryExamById" resultType="Exam">
+        SELECT e.*, g.gradeName
+        FROM exam e
+        LEFT JOIN grade g ON e.grade_id = g.gradeId
+        WHERE e.exam_id = #{examId}
+    </select>
+    
+    <!-- 查询所有考试 -->
+    <select id="queryAllExams" resultType="Exam">
+        SELECT e.*, g.gradeName
+        FROM exam e
+        LEFT JOIN grade g ON e.grade_id = g.gradeId
+        ORDER BY e.create_time DESC
+    </select>
+    
+    <!-- 根据等级ID查询考试 -->
+    <select id="queryExamsByGradeId" resultType="Exam">
+        SELECT e.*, g.gradeName
+        FROM exam e
+        LEFT JOIN grade g ON e.grade_id = g.gradeId
+        WHERE e.grade_id = #{gradeId}
+        ORDER BY e.create_time DESC
+    </select>
+    
+    <!-- 查询启用状态的考试 -->
+    <select id="queryEnabledExams" resultType="Exam">
+        SELECT e.*, g.gradeName
+        FROM exam e
+        LEFT JOIN grade g ON e.grade_id = g.gradeId
+        WHERE e.status = 1
+        ORDER BY e.create_time DESC
+    </select>
+</mapper>

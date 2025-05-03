@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.ExamQuestionMapper">
+    <!-- 添加题目 -->
+    <insert id="addQuestion" parameterType="ExamQuestion" useGeneratedKeys="true" keyProperty="questionId">
+        INSERT INTO exam_question (exam_id, question_type, question_content, options, correct_answer, score, analysis, order_num)
+        VALUES (#{examId}, #{questionType}, #{questionContent}, #{options}, #{correctAnswer}, #{score}, #{analysis}, #{orderNum})
+    </insert>
+    
+    <!-- 批量添加题目 -->
+    <insert id="batchAddQuestions" parameterType="java.util.List">
+        INSERT INTO exam_question (exam_id, question_type, question_content, options, correct_answer, score, analysis, order_num)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.examId}, #{item.questionType}, #{item.questionContent}, #{item.options}, #{item.correctAnswer}, #{item.score}, #{item.analysis}, #{item.orderNum})
+        </foreach>
+    </insert>
+    
+    <!-- 删除题目 -->
+    <delete id="deleteQuestion" parameterType="Integer">
+        DELETE FROM exam_question WHERE question_id = #{questionId}
+    </delete>
+    
+    <!-- 删除考试的所有题目 -->
+    <delete id="deleteQuestionsByExamId" parameterType="Integer">
+        DELETE FROM exam_question WHERE exam_id = #{examId}
+    </delete>
+    
+    <!-- 更新题目 -->
+    <update id="updateQuestion" parameterType="ExamQuestion">
+        UPDATE exam_question
+        SET question_type = #{questionType},
+            question_content = #{questionContent},
+            options = #{options},
+            correct_answer = #{correctAnswer},
+            score = #{score},
+            analysis = #{analysis},
+            order_num = #{orderNum}
+        WHERE question_id = #{questionId}
+    </update>
+    
+    <!-- 根据ID查询题目 -->
+    <select id="queryQuestionById" resultType="ExamQuestion">
+        SELECT q.*, e.title as examTitle
+        FROM exam_question q
+        LEFT JOIN exam e ON q.exam_id = e.exam_id
+        WHERE q.question_id = #{questionId}
+    </select>
+    
+    <!-- 查询考试的所有题目 -->
+    <select id="queryQuestionsByExamId" resultType="ExamQuestion">
+        SELECT q.*, e.title as examTitle
+        FROM exam_question q
+        LEFT JOIN exam e ON q.exam_id = e.exam_id
+        WHERE q.exam_id = #{examId}
+        ORDER BY q.order_num ASC
+    </select>
+    
+    <!-- 查询考试的题目数量 -->
+    <select id="countQuestionsByExamId" resultType="Integer">
+        SELECT COUNT(*) FROM exam_question WHERE exam_id = #{examId}
+    </select>
+</mapper>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.ExamAnswerMapper">
+    <!-- 添加答题记录 -->
+    <insert id="addAnswer" parameterType="ExamAnswer" useGeneratedKeys="true" keyProperty="answerId">
+        INSERT INTO exam_answer (record_id, question_id, user_answer, score, is_correct, scoring_status, ai_score_explanation)
+        VALUES (#{recordId}, #{questionId}, #{userAnswer}, #{score}, #{isCorrect}, #{scoringStatus}, #{aiScoreExplanation})
+    </insert>
+
+    <!-- 批量添加答题记录 -->
+    <insert id="batchAddAnswers" parameterType="java.util.List">
+        INSERT INTO exam_answer (record_id, question_id, user_answer, score, is_correct, scoring_status, ai_score_explanation)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.recordId}, #{item.questionId}, #{item.userAnswer}, #{item.score}, #{item.isCorrect}, #{item.scoringStatus}, #{item.aiScoreExplanation})
+        </foreach>
+    </insert>
+
+    <!-- 更新答题记录 -->
+    <update id="updateAnswer" parameterType="ExamAnswer">
+        UPDATE exam_answer
+        SET user_answer = #{userAnswer},
+            score = #{score},
+            is_correct = #{isCorrect},
+            scoring_status = #{scoringStatus},
+            ai_score_explanation = #{aiScoreExplanation}
+        WHERE answer_id = #{answerId}
+    </update>
+
+    <!-- 删除答题记录 -->
+    <delete id="deleteAnswer" parameterType="Integer">
+        DELETE FROM exam_answer WHERE answer_id = #{answerId}
+    </delete>
+
+    <!-- 删除考试记录的所有答题记录 -->
+    <delete id="deleteAnswersByRecordId" parameterType="Integer">
+        DELETE FROM exam_answer WHERE record_id = #{recordId}
+    </delete>
+
+    <!-- 根据ID查询答题记录 -->
+    <select id="queryAnswerById" resultType="ExamAnswer">
+        SELECT a.*, q.question_content as questionContent, q.question_type as questionType,
+               q.options, q.correct_answer as correctAnswer, q.analysis
+        FROM exam_answer a
+        LEFT JOIN exam_question q ON a.question_id = q.question_id
+        WHERE a.answer_id = #{answerId}
+    </select>
+
+    <!-- 查询考试记录的所有答题记录 -->
+    <select id="queryAnswersByRecordId" resultType="ExamAnswer">
+        SELECT a.*, q.question_content as questionContent, q.question_type as questionType,
+               q.options, q.correct_answer as correctAnswer, q.analysis
+        FROM exam_answer a
+        LEFT JOIN exam_question q ON a.question_id = q.question_id
+        WHERE a.record_id = #{recordId}
+        ORDER BY q.order_num ASC
+    </select>
+
+    <!-- 查询考试记录中某题的答题记录 -->
+    <select id="queryAnswerByRecordIdAndQuestionId" resultType="ExamAnswer">
+        SELECT a.*, q.question_content as questionContent, q.question_type as questionType,
+               q.options, q.correct_answer as correctAnswer, q.analysis
+        FROM exam_answer a
+        LEFT JOIN exam_question q ON a.question_id = q.question_id
+        WHERE a.record_id = #{param1} AND a.question_id = #{param2}
+    </select>
+</mapper>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.chun.myspringboot.mapper.ExamRecordMapper">
+    <!-- 添加考试记录 -->
+    <insert id="addRecord" parameterType="ExamRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO exam_record (user_id, exam_id, start_time, end_time, score, status)
+        VALUES (#{userId}, #{examId}, #{startTime}, #{endTime}, #{score}, #{status})
+    </insert>
+
+    <!-- 更新考试记录 -->
+    <update id="updateRecord" parameterType="ExamRecord">
+        UPDATE exam_record
+        SET end_time = #{endTime},
+            score = #{score},
+            status = #{status}
+        WHERE record_id = #{recordId}
+    </update>
+
+    <!-- 删除考试记录 -->
+    <delete id="deleteRecord" parameterType="Integer">
+        DELETE FROM exam_record WHERE record_id = #{recordId}
+    </delete>
+
+    <!-- 根据ID查询考试记录 -->
+    <select id="queryRecordById" resultType="ExamRecord">
+        SELECT r.*, u.userName, e.title as examTitle, e.total_score as totalScore, e.pass_score as passScore
+        FROM exam_record r
+        LEFT JOIN user u ON r.user_id = u.userId
+        LEFT JOIN exam e ON r.exam_id = e.exam_id
+        WHERE r.record_id = #{recordId}
+    </select>
+
+    <!-- 查询用户的所有考试记录 -->
+    <select id="queryRecordsByUserId" resultType="ExamRecord">
+        SELECT r.*, u.userName, e.title as examTitle, e.total_score as totalScore, e.pass_score as passScore
+        FROM exam_record r
+        LEFT JOIN user u ON r.user_id = u.userId
+        LEFT JOIN exam e ON r.exam_id = e.exam_id
+        WHERE r.user_id = #{userId}
+        ORDER BY r.start_time DESC
+    </select>
+
+    <!-- 查询考试的所有记录 -->
+    <select id="queryRecordsByExamId" resultType="ExamRecord">
+        SELECT r.*, u.userName, e.title as examTitle, e.total_score as totalScore, e.pass_score as passScore
+        FROM exam_record r
+        LEFT JOIN user u ON r.user_id = u.userId
+        LEFT JOIN exam e ON r.exam_id = e.exam_id
+        WHERE r.exam_id = #{examId}
+        ORDER BY r.start_time DESC
+    </select>
+
+    <!-- 查询用户在某考试的记录 -->
+    <select id="queryRecordByUserIdAndExamId" resultType="ExamRecord">
+        SELECT r.*, u.userName, e.title as examTitle, e.total_score as totalScore, e.pass_score as passScore
+        FROM exam_record r
+        LEFT JOIN user u ON r.user_id = u.userId
+        LEFT JOIN exam e ON r.exam_id = e.exam_id
+        WHERE r.user_id = #{param1} AND r.exam_id = #{param2}
+        ORDER BY r.start_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询所有考试记录 -->
+    <select id="queryAllRecords" resultType="ExamRecord">
+        SELECT r.*, u.userName, e.title as examTitle, e.total_score as totalScore, e.pass_score as passScore
+        FROM exam_record r
+        LEFT JOIN user u ON r.user_id = u.userId
+        LEFT JOIN exam e ON r.exam_id = e.exam_id
+        ORDER BY r.start_time DESC
+    </select>
+
+    <!-- 根据状态查询考试记录 -->
+    <select id="queryRecordsByStatus" resultType="ExamRecord">
+        SELECT r.*, u.userName, e.title as examTitle, e.total_score as totalScore, e.pass_score as passScore
+        FROM exam_record r
+        LEFT JOIN user u ON r.user_id = u.userId
+        LEFT JOIN exam e ON r.exam_id = e.exam_id
+        WHERE r.status = #{status}
+        ORDER BY r.start_time DESC
+    </select>
+</mapper>

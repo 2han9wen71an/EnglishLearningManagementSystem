@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>添加题目 - 英语学习管理系统</title>
+    <meta name="description" content="添加题目">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" href="https://i.imgur.com/QRAUqs9.png">
+    <link rel="shortcut icon" href="https://i.imgur.com/QRAUqs9.png">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.0/normalize.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pixeden-stroke-7-icon@1.2.3/pe-icon-7-stroke/dist/pe-icon-7-stroke.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.0/css/flag-icon.min.css">
+    <link rel="stylesheet" th:href="@{/static/css/cs-skin-elastic.css}">
+    <link rel="stylesheet" th:href="@{/static/css/style.css}">
+
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800' rel='stylesheet' type='text/css'>
+</head>
+
+<body>
+    <!-- 左侧菜单栏 -->
+    <div th:replace="common/admin-leftbar::leftbar"></div>
+
+    <!-- 右侧内容区域 -->
+    <div id="right-panel" class="right-panel">
+        <!-- 头部 -->
+        <div th:replace="common/admin-header::header"></div>
+
+        <!-- 内容区域 -->
+        <div class="content mt-3">
+            <div class="animated fadeIn">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong class="card-title" th:text="${exam.title + ' - 添加题目'}">考试标题 - 添加题目</strong>
+                                <a class="btn btn-secondary float-right" th:href="@{'/admin/viewExamQuestions/' + ${exam.examId}}">
+                                    <i class="fa fa-arrow-left"></i> 返回题目列表
+                                </a>
+                            </div>
+                            <div class="card-body">
+                                <form id="questionForm" th:action="@{/admin/addQuestion}" method="post">
+                                    <input type="hidden" name="examId" th:value="${exam.examId}">
+
+                                    <div class="form-group">
+                                        <label for="questionType">题目类型</label>
+                                        <select class="form-control" id="questionType" name="questionType" required>
+                                            <option value="1">单选题</option>
+                                            <option value="2">多选题</option>
+                                            <option value="3">判断题</option>
+                                            <option value="4">填空题</option>
+                                            <option value="5">简答题</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="questionContent">题目内容</label>
+                                        <textarea class="form-control" id="questionContent" name="questionContent" rows="3" required></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="score">分值</label>
+                                        <input type="number" class="form-control" id="score" name="score" min="1" max="100" value="5" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="orderNum">题目顺序</label>
+                                        <input type="number" class="form-control" id="orderNum" name="orderNum" min="1" value="1" required>
+                                    </div>
+
+                                    <!-- 单选题选项 -->
+                                    <div id="singleChoiceOptions" class="option-container">
+                                        <h5>选项</h5>
+                                        <div class="form-group">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">A</div>
+                                                </div>
+                                                <input type="text" class="form-control option-input" data-option="A" placeholder="选项A内容">
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">B</div>
+                                                </div>
+                                                <input type="text" class="form-control option-input" data-option="B" placeholder="选项B内容">
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">C</div>
+                                                </div>
+                                                <input type="text" class="form-control option-input" data-option="C" placeholder="选项C内容">
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">D</div>
+                                                </div>
+                                                <input type="text" class="form-control option-input" data-option="D" placeholder="选项D内容">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="singleCorrectAnswer">正确答案</label>
+                                            <select class="form-control" id="singleCorrectAnswer" name="correctAnswer">
+                                                <option value="A">A</option>
+                                                <option value="B">B</option>
+                                                <option value="C">C</option>
+                                                <option value="D">D</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- 隐藏字段，用于存储JSON格式的选项 -->
+                                        <input type="hidden" id="options" name="options">
+                                    </div>
+
+                                    <!-- 多选题选项 -->
+                                    <div id="multiChoiceOptions" class="option-container" style="display: none;">
+                                        <h5>选项</h5>
+                                        <div class="form-group">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">
+                                                        <input type="checkbox" class="multi-option-checkbox" data-option="A">
+                                                    </div>
+                                                </div>
+                                                <input type="text" class="form-control option-input multi-option-input" data-option="A" placeholder="选项A内容">
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">
+                                                        <input type="checkbox" class="multi-option-checkbox" data-option="B">
+                                                    </div>
+                                                </div>
+                                                <input type="text" class="form-control option-input multi-option-input" data-option="B" placeholder="选项B内容">
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">
+                                                        <input type="checkbox" class="multi-option-checkbox" data-option="C">
+                                                    </div>
+                                                </div>
+                                                <input type="text" class="form-control option-input multi-option-input" data-option="C" placeholder="选项C内容">
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group-text">
+                                                        <input type="checkbox" class="multi-option-checkbox" data-option="D">
+                                                    </div>
+                                                </div>
+                                                <input type="text" class="form-control option-input multi-option-input" data-option="D" placeholder="选项D内容">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>已选答案：<span id="selectedOptionsDisplay"></span></label>
+                                        </div>
+
+                                        <!-- 隐藏字段，用于存储多选题的正确答案 -->
+                                        <input type="hidden" id="multiCorrectAnswer" name="correctAnswer">
+                                    </div>
+
+                                    <!-- 判断题选项 -->
+                                    <div id="judgementOptions" class="option-container" style="display: none;">
+                                        <div class="form-group">
+                                            <label for="judgementAnswer">正确答案</label>
+                                            <select class="form-control" id="judgementAnswer" name="correctAnswer">
+                                                <option value="T">正确</option>
+                                                <option value="F">错误</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- 填空题和简答题 -->
+                                    <div id="textAnswerOptions" class="option-container" style="display: none;">
+                                        <div class="form-group">
+                                            <label for="textAnswer">正确答案</label>
+                                            <textarea class="form-control" id="textAnswer" name="correctAnswer" rows="3"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="analysis">解析</label>
+                                        <textarea class="form-control" id="analysis" name="analysis" rows="3"></textarea>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">保存题目</button>
+                                    <a th:href="@{'/admin/viewExamQuestions/' + ${exam.examId}}" class="btn btn-secondary">取消</a>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.content -->
+
+        <div class="clearfix"></div>
+        <!-- 页脚 -->
+        <div th:replace="common/footer::footer"></div>
+    </div>
+    <!-- /#right-panel -->
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.4/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-match-height@0.7.2/dist/jquery.matchHeight.min.js"></script>
+    <script th:src="@{/static/js/main.js}"></script>
+
+    <script>
+        jQuery(document).ready(function($) {
+            // 初始化
+            updateMultiCorrectAnswer();
+
+            // 题目类型切换
+            $('#questionType').change(function() {
+                const type = $(this).val();
+                $('.option-container').hide();
+
+                switch(type) {
+                    case '1': // 单选题
+                        $('#singleChoiceOptions').show();
+                        break;
+                    case '2': // 多选题
+                        $('#multiChoiceOptions').show();
+                        updateMultiCorrectAnswer(); // 更新多选题显示
+                        break;
+                    case '3': // 判断题
+                        $('#judgementOptions').show();
+                        break;
+                    case '4': // 填空题
+                    case '5': // 简答题
+                        $('#textAnswerOptions').show();
+                        break;
+                }
+            });
+
+            // 多选题选项变化
+            $('.multi-option-checkbox').change(function() {
+                updateMultiCorrectAnswer();
+            });
+
+            // 更新多选题正确答案
+            function updateMultiCorrectAnswer() {
+                const selectedOptions = [];
+                $('.multi-option-checkbox:checked').each(function() {
+                    selectedOptions.push($(this).data('option'));
+                });
+                $('#multiCorrectAnswer').val(selectedOptions.join(','));
+
+                // 更新显示
+                $('#selectedOptionsDisplay').text(selectedOptions.join(', ') || '无');
+            }
+
+            // 表单提交前处理
+            $('#questionForm').submit(function(e) {
+                e.preventDefault(); // 阻止默认提交
+
+                // 处理选项
+                const type = $('#questionType').val();
+
+                // 清除所有答案字段的name属性
+                $('#singleCorrectAnswer').removeAttr('name');
+                $('#multiCorrectAnswer').removeAttr('name');
+                $('#judgementAnswer').removeAttr('name');
+                $('#textAnswer').removeAttr('name');
+
+                // 根据题型设置正确的答案字段
+                if (type === '1') {
+                    $('#singleCorrectAnswer').attr('name', 'correctAnswer');
+
+                    // 处理选项
+                    const options = {};
+                    $('#singleChoiceOptions .option-input').each(function() {
+                        const option = $(this).data('option');
+                        const content = $(this).val().trim();
+                        if (content) {
+                            options[option] = content;
+                        }
+                    });
+                    $('#options').val(JSON.stringify(options));
+                }
+                else if (type === '2') {
+                    $('#multiCorrectAnswer').attr('name', 'correctAnswer');
+                    updateMultiCorrectAnswer();
+
+                    // 处理选项
+                    const options = {};
+                    $('#multiChoiceOptions .option-input').each(function() {
+                        const option = $(this).data('option');
+                        const content = $(this).val().trim();
+                        if (content) {
+                            options[option] = content;
+                        }
+                    });
+                    $('#options').val(JSON.stringify(options));
+                }
+                else if (type === '3') {
+                    $('#judgementAnswer').attr('name', 'correctAnswer');
+                }
+                else if (type === '4' || type === '5') {
+                    $('#textAnswer').attr('name', 'correctAnswer');
+                }
+
+                // 提交表单
+                this.submit();
+            });
+        });
+    </script>
+</body>
+</html>
