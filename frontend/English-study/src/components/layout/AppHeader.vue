@@ -15,7 +15,8 @@
           <el-dropdown-menu>
             <el-dropdown-item command="profile">个人中心</el-dropdown-item>
             <el-dropdown-item command="settings">设置</el-dropdown-item>
-            <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+            <el-dropdown-item v-if="isAdminUser" command="adminPanel" divided>管理员后台</el-dropdown-item>
+            <el-dropdown-item :divided="!isAdminUser" command="logout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -24,15 +25,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
-import { getUserInfo, clearAuth } from '@/utils/auth'
+import { getUserInfo, clearAuth, isAdmin } from '@/utils/auth'
 
 const router = useRouter()
 const userName = ref('用户名')
 const userAvatar = ref('')
+// 判断当前用户是否为管理员
+const isAdminUser = computed(() => isAdmin())
 
 // 获取用户信息
 onMounted(() => {
@@ -48,6 +51,13 @@ const handleCommand = (command: string) => {
     router.push('/profile')
   } else if (command === 'settings') {
     router.push('/settings')
+  } else if (command === 'adminPanel') {
+    // 跳转到管理员后台
+    router.push('/admin/dashboard')
+    ElMessage({
+      type: 'success',
+      message: '正在进入管理员后台'
+    })
   } else if (command === 'logout') {
     ElMessageBox.confirm('确定要退出登录吗?', '提示', {
       confirmButtonText: '确定',

@@ -21,7 +21,8 @@
           <el-dropdown-menu>
             <el-dropdown-item command="profile">个人信息</el-dropdown-item>
             <el-dropdown-item command="password">修改密码</el-dropdown-item>
-            <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+            <el-dropdown-item command="frontEnd" divided>返回前台</el-dropdown-item>
+            <el-dropdown-item command="logout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -32,7 +33,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { Fold, Expand, ArrowDown } from '@element-plus/icons-vue'
 import Cookies from 'js-cookie'
 
@@ -63,7 +64,7 @@ const handleCommand = (command: string) => {
       Cookies.remove('token')
       Cookies.remove('userId')
       Cookies.remove('role')
-      
+
       // 跳转到登录页
       router.push('/login')
     }).catch(() => {
@@ -73,6 +74,13 @@ const handleCommand = (command: string) => {
     router.push('/admin/profile')
   } else if (command === 'password') {
     router.push('/admin/change-password')
+  } else if (command === 'frontEnd') {
+    // 跳转到前台首页
+    router.push('/dashboard')
+    ElMessage({
+      message: '正在返回前台',
+      type: 'success'
+    })
   }
 }
 </script>
