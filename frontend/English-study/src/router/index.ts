@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 
 // 布局组件
 const MainLayout = () => import('@/layouts/MainLayout.vue')
+const AdminLayout = () => import('@/layouts/AdminLayout.vue')
 
 // 路由配置
 const router = createRouter({
@@ -105,6 +106,99 @@ const router = createRouter({
         }
       ]
     },
+    // 管理员路由
+    {
+      path: '/admin',
+      component: AdminLayout,
+      redirect: '/admin/dashboard',
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        // 管理员主页
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: () => import('@/views/admin/dashboard/DashboardView.vue'),
+          meta: { title: '控制面板', requiresAuth: true, requiresAdmin: true }
+        },
+        // 用户管理
+        {
+          path: 'users',
+          name: 'AdminUsers',
+          component: () => import('@/views/admin/users/UsersView.vue'),
+          meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 单词管理
+        {
+          path: 'words',
+          name: 'AdminWords',
+          component: () => import('@/views/admin/words/WordsView.vue'),
+          meta: { title: '单词管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 听力管理
+        {
+          path: 'listening',
+          name: 'AdminListening',
+          component: () => import('@/views/admin/listening/ListeningView.vue'),
+          meta: { title: '听力管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 阅读管理
+        {
+          path: 'reading',
+          name: 'AdminReading',
+          component: () => import('@/views/admin/reading/ReadingView.vue'),
+          meta: { title: '阅读管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 考试管理
+        {
+          path: 'exams',
+          name: 'AdminExams',
+          component: () => import('@/views/admin/exams/ExamsView.vue'),
+          meta: { title: '考试管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 考试题目管理
+        {
+          path: 'exams/:examId/questions',
+          name: 'AdminExamQuestions',
+          component: () => import('@/views/admin/exams/QuestionsView.vue'),
+          meta: { title: '题目管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 成绩管理
+        {
+          path: 'scores',
+          name: 'AdminScores',
+          component: () => import('@/views/admin/scores/ScoresView.vue'),
+          meta: { title: '成绩管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 公告管理
+        {
+          path: 'notices',
+          name: 'AdminNotices',
+          component: () => import('@/views/admin/notices/NoticesView.vue'),
+          meta: { title: '公告管理', requiresAuth: true, requiresAdmin: true }
+        },
+        // 数据统计
+        {
+          path: 'statistics',
+          name: 'AdminStatistics',
+          component: () => import('@/views/admin/statistics/StatisticsView.vue'),
+          meta: { title: '数据统计', requiresAuth: true, requiresAdmin: true }
+        },
+        // 个人资料
+        {
+          path: 'profile',
+          name: 'AdminProfile',
+          component: () => import('@/views/admin/profile/ProfileView.vue'),
+          meta: { title: '个人资料', requiresAuth: true, requiresAdmin: true }
+        },
+        // 修改密码
+        {
+          path: 'change-password',
+          name: 'AdminChangePassword',
+          component: () => import('@/views/admin/profile/ProfileView.vue'),
+          meta: { title: '修改密码', requiresAuth: true, requiresAdmin: true }
+        }
+      ]
+    },
     // 404页面
     {
       path: '/:pathMatch(.*)*',
@@ -127,6 +221,19 @@ router.beforeEach((to, from, next) => {
       ElMessage.warning('请先登录')
       next({ name: 'Login', query: { redirect: to.fullPath } })
       return
+    }
+
+    // 检查是否需要管理员权限
+    if (to.meta.requiresAdmin) {
+      const role = Cookies.get('role')
+      console.log('当前用户角色:', role) // 调试用
+
+      // 检查用户是否是管理员（角色值为1）
+      if (role !== '1') {
+        ElMessage.error('您没有管理员权限')
+        next({ path: '/dashboard' })
+        return
+      }
     }
   }
 

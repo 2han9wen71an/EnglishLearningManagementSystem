@@ -1,7 +1,7 @@
 import request from '@/utils/request'
 
 // 获取单词列表
-export function getWordList(params: { gradeId?: number; page?: number; size?: number }) {
+export function getWordList(params: { gradeId?: number; page?: number; size?: number; query?: string }) {
   return request({
     url: '/words',
     method: 'get',
@@ -38,5 +38,39 @@ export function toggleWordCollection(wordId: number) {
   return request({
     url: `/words/${wordId}/collection`,
     method: 'post'
+  })
+}
+
+// 添加单词（管理员）
+export function addWord(data: any) {
+  return request({
+    url: '/admin/words',
+    method: 'post',
+    data
+  })
+}
+
+// 更新单词（管理员）
+export function updateWord(wordId: number, data: any) {
+  return request({
+    url: `/admin/words/${wordId}`,
+    method: 'put',
+    data
+  })
+}
+
+// 删除单词（管理员）
+export function deleteWord(wordId: number) {
+  return request({
+    url: `/admin/words/${wordId}`,
+    method: 'delete'
+  })
+}
+
+// 获取单词等级列表
+export function getWordGradeList() {
+  return request({
+    url: '/words/grades',
+    method: 'get'
   })
 }

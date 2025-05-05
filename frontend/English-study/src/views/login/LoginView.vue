@@ -104,6 +104,9 @@ const handleLogin = () => {
         if (res.success) {
           // 保存token和用户信息
           Cookies.set('token', res.data.token, { expires: rememberMe.value ? 7 : 1 })
+          // 保存用户角色，用于权限验证
+          Cookies.set('role', String(res.data.role), { expires: rememberMe.value ? 7 : 1 })
+          Cookies.set('userId', String(res.data.userId), { expires: rememberMe.value ? 7 : 1 })
           localStorage.setItem('userInfo', JSON.stringify(res.data))
 
           ElMessage.success('登录成功')
