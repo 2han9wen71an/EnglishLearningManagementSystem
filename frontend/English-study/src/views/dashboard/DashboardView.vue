@@ -10,7 +10,7 @@
         </el-card>
       </el-col>
     </el-row>
-    
+
     <el-row :gutter="20" class="mt-20">
       <el-col :span="8">
         <el-card class="stat-card">
@@ -27,7 +27,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="8">
         <el-card class="stat-card">
           <template #header>
@@ -43,7 +43,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="8">
         <el-card class="stat-card">
           <template #header>
@@ -60,7 +60,7 @@
         </el-card>
       </el-col>
     </el-row>
-    
+
     <el-row :gutter="20" class="mt-20">
       <el-col :span="16">
         <el-card>
@@ -76,7 +76,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="8">
         <el-card>
           <template #header>
@@ -97,6 +97,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { getRandomSentence } from '@/api/sentence'
+import { getLatestNotice } from '@/api/notice'
+import { getDashboardData } from '@/api/dashboard'
+import Cookies from 'js-cookie'
+import { ElMessage } from 'element-plus'
 
 // 当前时间
 const currentTime = ref('')
@@ -112,29 +117,29 @@ const updateTime = () => {
   const seconds = now.getSeconds().toString().padStart(2, '0')
   const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
   const weekday = weekdays[now.getDay()]
-  
+
   currentTime.value = `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds} ${weekday}`
 }
 
 // 单词学习统计
 const wordStats = ref({
-  learned: 120,
+  learned: 0,
   target: 200,
-  percentage: 60
+  percentage: 0
 })
 
 // 听力练习统计
 const listeningStats = ref({
-  completed: 8,
-  total: 15,
-  percentage: 53
+  completed: 0,
+  total: 0,
+  percentage: 0
 })
 
 // 考试成绩统计
 const examStats = ref({
-  average: 85,
-  count: 5,
-  percentage: 85,
+  average: 0,
+  count: 0,
+  percentage: 0,
   status: 'success'
 })
 
@@ -145,38 +150,105 @@ const format = (percentage: number) => {
 
 // 最新公告
 const notice = ref({
-  title: '系统更新通知',
-  time: '2023-05-01 10:00',
-  content: '尊敬的用户，我们将于近期对系统进行升级，新版本将增加情景对话、作文批改等功能，敬请期待！'
+  title: '加载中...',
+  time: '',
+  content: '正在加载公告内容...'
 })
 
 // 每日一句
 const sentence = ref({
-  text: 'The best preparation for tomorrow is doing your best today.',
-  translation: '对明天最好的准备就是今天做到最好。'
+  text: '加载中...',
+  translation: '正在加载翻译...'
 })
 
+// 获取仪表盘数据
+const fetchDashboardData = async () => {
+  try {
+    const userId = Cookies.get('userId')
+    if (!userId) {
+      ElMessage.error('未找到用户信息，请重新登录')
+      return
+    }
+
+    const response = await getDashboardData(parseInt(userId))
+    if (response.success) {
+      const data = response.data
+
+      // 更新单词学习统计
+      if (data.wordStats) {
+        wordStats.value = data.wordStats
+      }
+
+      // 更新听力练习统计
+      if (data.listeningStats) {
+        listeningStats.value = data.listeningStats
+      }
+
+      // 更新考试成绩统计
+      if (data.examStats) {
+        examStats.value = data.examStats
+      }
+    }
+  } catch (error) {
+    console.error('获取仪表盘数据失败:', error)
+    ElMessage.error('获取仪表盘数据失败，请稍后重试')
+  }
+}
+
+// 获取最新公告
+const fetchLatestNotice = async () => {
+  try {
+    const response = await getLatestNotice()
+    if (response.success) {
+      const noticeData = response.data
+      notice.value = {
+        title: noticeData.title,
+        time: formatDate(noticeData.creatTime),
+        content: noticeData.content
+      }
+    }
+  } catch (error) {
+    console.error('获取最新公告失败:', error)
+    // 使用默认公告
+    notice.value = {
+      title: '系统公告',
+      time: formatDate(new Date()),
+      content: '暂无公告内容'
+    }
+  }
+}
+
+// 格式化日期
+const formatDate = (dateStr: string | Date) => {
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
 // 刷新每日一句
-const refreshSentence = () => {
-  // 这里应该调用API获取新的每日一句
-  // 模拟数据
-  const sentences = [
-    {
+const refreshSentence = async () => {
+  try {
+    const response = await getRandomSentence()
+    if (response.success) {
+      const sentenceData = response.data
+      sentence.value = {
+        text: sentenceData.sentenceName,
+        translation: sentenceData.explain
+      }
+    }
+  } catch (error) {
+    console.error('获取每日一句失败:', error)
+    // 使用默认句子
+    sentence.value = {
       text: 'The best preparation for tomorrow is doing your best today.',
       translation: '对明天最好的准备就是今天做到最好。'
-    },
-    {
-      text: 'Life is like riding a bicycle. To keep your balance, you must keep moving.',
-      translation: '生活就像骑自行车，要保持平衡就得不断前进。'
-    },
-    {
-      text: 'The only limit to our realization of tomorrow will be our doubts of today.',
-      translation: '实现明天理想的唯一障碍是今天的疑虑。'
     }
-  ]
-  
-  const randomIndex = Math.floor(Math.random() * sentences.length)
-  sentence.value = sentences[randomIndex]
+  }
 }
 
 // 页面加载时
@@ -184,6 +256,15 @@ onMounted(() => {
   updateTime()
   // 每秒更新时间
   setInterval(updateTime, 1000)
+
+  // 获取仪表盘数据
+  fetchDashboardData()
+
+  // 获取最新公告
+  fetchLatestNotice()
+
+  // 获取每日一句
+  refreshSentence()
 })
 </script>
 

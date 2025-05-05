@@ -36,4 +36,17 @@ public class ListenServiceImpl implements ListenService {
     public List<Listen> queryAllListen() {
         return listenMapper.queryAllListen();
     }
+
+    @Autowired
+    private UserListenServiceImpl userListenService;
+
+    @Override
+    public int queryUserCompletedListeningCount(Integer userId) {
+        return userListenService.queryUserCompletedListeningCount(userId);
+    }
+
+    @Override
+    public int queryTotalListeningCount() {
+        return listenMapper.queryTotalListeningCount();
+    }
 }

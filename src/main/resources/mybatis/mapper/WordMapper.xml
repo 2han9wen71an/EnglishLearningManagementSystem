@@ -143,4 +143,94 @@
          select * from word where Remember=0;
     </select>
 
+    <!--搜索单词-->
+    <select id="searchWords" resultType="Word">
+        select w.* from word w
+        <where>
+            <if test="query != null and query != ''">
+                (w.wordName like CONCAT('%', #{query}, '%')
+                OR w.explanation like CONCAT('%', #{query}, '%'))
+            </if>
+            <if test="gradeId != null">
+                AND w.grade = #{gradeId}
+            </if>
+            <if test="status != null">
+                <choose>
+                    <when test="status == 0">
+                        AND w.study = 0 AND w.remember = 0
+                    </when>
+                    <when test="status == 1">
+                        AND w.study = 1 AND w.remember = 0
+                    </when>
+                    <when test="status == 2">
+                        AND w.remember = 1
+                    </when>
+                </choose>
+            </if>
+            <if test="userId != null">
+                <if test="status != null">
+                    <choose>
+                        <when test="status == 0">
+                            AND NOT EXISTS (SELECT 1 FROM user_word uw WHERE uw.wordId = w.wordId AND uw.userId = #{userId} AND (uw.study = 1 OR uw.remember = 1))
+                        </when>
+                        <when test="status == 1">
+                            AND EXISTS (SELECT 1 FROM user_word uw WHERE uw.wordId = w.wordId AND uw.userId = #{userId} AND uw.study = 1 AND uw.remember = 0)
+                        </when>
+                        <when test="status == 2">
+                            AND EXISTS (SELECT 1 FROM user_word uw WHERE uw.wordId = w.wordId AND uw.userId = #{userId} AND uw.remember = 1)
+                        </when>
+                    </choose>
+                </if>
+            </if>
+        </where>
+        order by w.wordId desc
+    </select>
+
+    <!--获取搜索结果总数-->
+    <select id="countSearchWords" resultType="int">
+        select count(*) from word w
+        <where>
+            <if test="query != null and query != ''">
+                (w.wordName like CONCAT('%', #{query}, '%')
+                OR w.explanation like CONCAT('%', #{query}, '%'))
+            </if>
+            <if test="gradeId != null">
+                AND w.grade = #{gradeId}
+            </if>
+            <if test="status != null">
+                <choose>
+                    <when test="status == 0">
+                        AND w.study = 0 AND w.remember = 0
+                    </when>
+                    <when test="status == 1">
+                        AND w.study = 1 AND w.remember = 0
+                    </when>
+                    <when test="status == 2">
+                        AND w.remember = 1
+                    </when>
+                </choose>
+            </if>
+            <if test="userId != null">
+                <if test="status != null">
+                    <choose>
+                        <when test="status == 0">
+                            AND NOT EXISTS (SELECT 1 FROM user_word uw WHERE uw.wordId = w.wordId AND uw.userId = #{userId} AND (uw.study = 1 OR uw.remember = 1))
+                        </when>
+                        <when test="status == 1">
+                            AND EXISTS (SELECT 1 FROM user_word uw WHERE uw.wordId = w.wordId AND uw.userId = #{userId} AND uw.study = 1 AND uw.remember = 0)
+                        </when>
+                        <when test="status == 2">
+                            AND EXISTS (SELECT 1 FROM user_word uw WHERE uw.wordId = w.wordId AND uw.userId = #{userId} AND uw.remember = 1)
+                        </when>
+                    </choose>
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <!--获取单词总数-->
+    <select id="getTotalWordsCount" resultType="int">
+        SELECT COUNT(*) FROM word
+    </select>
+
 </mapper>

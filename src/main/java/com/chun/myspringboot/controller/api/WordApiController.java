@@ -28,18 +28,31 @@ public class WordApiController {
     private GradeServiceImpl gradeService;
 
     /**
-     * 获取所有单词
+     * 获取单词列表（支持搜索和分页）
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Word>>> getAllWords(@RequestParam(required = false) Integer gradeId) {
-        List<Word> words;
-        if (gradeId != null) {
-            // 由于没有直接按等级查询的方法，我们可以先获取所有单词，然后在前端过滤
-            words = wordService.queryAllWord();
-        } else {
-            words = wordService.queryAllWord();
-        }
-        return ResponseEntity.ok(ApiResponse.success(words));
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllWords(
+            @RequestParam(required = false) Integer gradeId,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer userId,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size) {
+
+        Map<String, Object> result = new HashMap<>();
+
+        // 搜索单词
+        List<Word> words = wordService.searchWords(query, gradeId, status, userId, page, size);
+
+        // 获取总数
+        int total = wordService.countSearchWords(query, gradeId, status, userId);
+
+        result.put("list", words);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     /**

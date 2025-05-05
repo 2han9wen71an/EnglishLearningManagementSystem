@@ -17,6 +17,14 @@ export function getNoticeDetail(noticeId: number) {
   })
 }
 
+// 获取最新公告
+export function getLatestNotice() {
+  return request({
+    url: '/notices/latest',
+    method: 'get'
+  })
+}
+
 // 添加公告（管理员）
 export function addNotice(data: any) {
   return request({

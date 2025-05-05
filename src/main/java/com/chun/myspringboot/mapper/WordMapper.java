@@ -118,10 +118,30 @@ public interface WordMapper {
     //根据grade查询已经学习单词数量
     int queryStudyNumberByGrade(Integer grade);
 
+    /**
+     * 搜索单词
+     * @param query 搜索关键词
+     * @param gradeId 等级ID（可选）
+     * @param status 学习状态（可选）
+     * @param userId 用户ID（可选）
+     * @return 单词列表
+     */
+    List<Word> searchWords(String query, Integer gradeId, Integer status, Integer userId);
 
+    /**
+     * 获取搜索结果总数
+     * @param query 搜索关键词
+     * @param gradeId 等级ID（可选）
+     * @param status 学习状态（可选）
+     * @param userId 用户ID（可选）
+     * @return 总数
+     */
+    int countSearchWords(String query, Integer gradeId, Integer status, Integer userId);
 
-
-
-
+    /**
+     * 获取单词总数
+     * @return 单词总数
+     */
+    int getTotalWordsCount();
 
 }

@@ -49,3 +49,11 @@ export function getUserExamStats(userId: number) {
     method: 'get'
   })
 }
+
+// 获取用户听力练习统计数据
+export function getUserListeningStats(userId: number) {
+  return request({
+    url: `/users/${userId}/statistics/listening`,
+    method: 'get'
+  })
+}

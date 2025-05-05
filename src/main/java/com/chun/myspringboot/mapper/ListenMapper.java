@@ -19,4 +19,10 @@ public interface ListenMapper {
     int updateListen(Listen listen);
     //查看所有听力所有信息
     List<Listen> queryAllListen();
+
+    /**
+     * 获取总听力练习数量
+     * @return 总听力练习数量
+     */
+    int queryTotalListeningCount();
 }

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--namespace：绑定一个对应的Dao/Mapper接口-->
+<mapper namespace="com.chun.myspringboot.mapper.UserWordMapper">
+
+    <!--
+    #######################################################
+                        增加
+    #######################################################
+    -->
+    <!--添加用户单词关联-->
+    <insert id="addUserWord" parameterType="UserWord" useGeneratedKeys="true" keyProperty="id">
+        insert into user_word(userId, wordId, study, remember, collection, learnTime)
+        values (#{userId}, #{wordId}, #{study}, #{remember}, #{collection}, #{learnTime})
+    </insert>
+
+    <!--
+    #######################################################
+                        删除
+    #######################################################
+    -->
+    <!--删除用户单词关联-->
+    <delete id="deleteUserWord" parameterType="Integer">
+        delete from user_word where id=#{id}
+    </delete>
+
+    <!--
+    #######################################################
+                        修改
+    #######################################################
+    -->
+    <!--更新用户单词关联-->
+    <update id="updateUserWord" parameterType="UserWord">
+        update user_word set
+        userId=#{userId}, wordId=#{wordId}, study=#{study}, remember=#{remember},
+        collection=#{collection}, learnTime=#{learnTime}
+        where id=#{id}
+    </update>
+
+    <!--
+    #######################################################
+                        查询
+    #######################################################
+    -->
+    <!--根据ID查询用户单词关联-->
+    <select id="queryUserWordById" resultType="UserWord">
+        select * from user_word where id=#{id}
+    </select>
+
+    <!--根据用户ID和单词ID查询用户单词关联-->
+    <select id="queryUserWordByUserIdAndWordId" resultType="UserWord">
+        select * from user_word where userId=#{userId} and wordId=#{wordId} limit 1
+    </select>
+
+    <!--根据用户ID查询用户单词关联-->
+    <select id="queryUserWordsByUserId" resultType="UserWord">
+        select * from user_word where userId=#{userId}
+    </select>
+
+    <!--根据单词ID查询用户单词关联-->
+    <select id="queryUserWordsByWordId" resultType="UserWord">
+        select * from user_word where wordId=#{wordId}
+    </select>
+
+    <!--获取用户已学习的单词数量-->
+    <select id="queryUserLearnedWordsCount" resultType="int">
+        SELECT COUNT(*) FROM user_word WHERE userId=#{userId} AND study=1
+    </select>
+
+    <!--获取用户今日学习的单词数量-->
+    <select id="queryUserTodayLearnedWordsCount" resultType="int">
+        SELECT COUNT(*) FROM user_word
+        WHERE userId = #{param1}
+        AND study = 1
+        AND DATE(learnTime) = DATE(#{param2})
+    </select>
+
+</mapper>

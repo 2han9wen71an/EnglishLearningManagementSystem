@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--namespace：绑定一个对应的Dao/Mapper接口-->
+<mapper namespace="com.chun.myspringboot.mapper.UserActivityMapper">
+
+    <!--
+    #######################################################
+                        增加
+    #######################################################
+    -->
+    <!--添加用户活动-->
+    <insert id="addUserActivity" parameterType="UserActivity" useGeneratedKeys="true" keyProperty="activityId">
+        insert into user_activity(user_id, activity_type, activity_content, related_id, activity_time)
+        values (#{userId}, #{activityType}, #{activityContent}, #{relatedId}, #{activityTime})
+    </insert>
+
+    <!--
+    #######################################################
+                        删除
+    #######################################################
+    -->
+    <!--删除用户活动-->
+    <delete id="deleteUserActivity" parameterType="Integer">
+        delete from user_activity where activity_id=#{activityId}
+    </delete>
+
+    <!--
+    #######################################################
+                        查询
+    #######################################################
+    -->
+    <!--根据ID查询用户活动-->
+    <select id="queryUserActivityById" resultType="UserActivity">
+        select 
+            activity_id as activityId,
+            user_id as userId,
+            activity_type as activityType,
+            activity_content as activityContent,
+            related_id as relatedId,
+            activity_time as activityTime
+        from user_activity 
+        where activity_id=#{activityId}
+    </select>
+
+    <!--根据用户ID查询用户活动-->
+    <select id="queryUserActivitiesByUserId" resultType="UserActivity">
+        select 
+            activity_id as activityId,
+            user_id as userId,
+            activity_type as activityType,
+            activity_content as activityContent,
+            related_id as relatedId,
+            activity_time as activityTime
+        from user_activity 
+        where user_id=#{userId}
+        order by activity_time desc
+    </select>
+
+    <!--根据用户ID查询最近的用户活动-->
+    <select id="queryRecentUserActivitiesByUserId" resultType="UserActivity">
+        select 
+            activity_id as activityId,
+            user_id as userId,
+            activity_type as activityType,
+            activity_content as activityContent,
+            related_id as relatedId,
+            activity_time as activityTime
+        from user_activity 
+        where user_id=#{param1}
+        order by activity_time desc
+        limit #{param2}
+    </select>
+
+    <!--根据活动类型查询用户活动-->
+    <select id="queryUserActivitiesByType" resultType="UserActivity">
+        select 
+            activity_id as activityId,
+            user_id as userId,
+            activity_type as activityType,
+            activity_content as activityContent,
+            related_id as relatedId,
+            activity_time as activityTime
+        from user_activity 
+        where user_id=#{param1} and activity_type=#{param2}
+        order by activity_time desc
+    </select>
+
+</mapper>

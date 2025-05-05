@@ -10,42 +10,52 @@ import java.util.List;
 
 @Service
 public class ExamServiceImpl implements ExamService {
-    
+
     @Autowired
     private ExamMapper examMapper;
-    
+
     @Override
     public int addExam(Exam exam) {
         return examMapper.addExam(exam);
     }
-    
+
     @Override
     public int deleteExam(Integer examId) {
         return examMapper.deleteExam(examId);
     }
-    
+
     @Override
     public int updateExam(Exam exam) {
         return examMapper.updateExam(exam);
     }
-    
+
     @Override
     public Exam queryExamById(Integer examId) {
         return examMapper.queryExamById(examId);
     }
-    
+
     @Override
     public List<Exam> queryAllExams() {
         return examMapper.queryAllExams();
     }
-    
+
     @Override
     public List<Exam> queryExamsByGradeId(Integer gradeId) {
         return examMapper.queryExamsByGradeId(gradeId);
     }
-    
+
     @Override
     public List<Exam> queryEnabledExams() {
         return examMapper.queryEnabledExams();
+    }
+
+    @Override
+    public int queryUserExamCount(Integer userId) {
+        return examMapper.queryUserExamCount(userId);
+    }
+
+    @Override
+    public double queryUserExamAverageScore(Integer userId) {
+        return examMapper.queryUserExamAverageScore(userId);
     }
 }

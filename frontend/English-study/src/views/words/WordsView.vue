@@ -19,7 +19,8 @@
                 </el-select>
               </el-form-item>
 
-              <el-form-item label="单词分类">
+              <!-- 暂时移除分类筛选，因为数据库中没有对应字段 -->
+              <!-- <el-form-item label="单词分类">
                 <el-select v-model="filterForm.category" placeholder="选择单词分类" style="width: 100%;">
                   <el-option label="全部" value=""></el-option>
                   <el-option label="CET-4" value="cet4"></el-option>
@@ -27,7 +28,7 @@
                   <el-option label="IELTS" value="ielts"></el-option>
                   <el-option label="TOEFL" value="toefl"></el-option>
                 </el-select>
-              </el-form-item>
+              </el-form-item> -->
 
               <el-form-item label="学习状态">
                 <el-select v-model="filterForm.status" placeholder="选择学习状态" style="width: 100%;">
@@ -115,7 +116,9 @@
               <template #default="scope">
                 <div class="word-item">
                   <span class="word-text">{{ scope.row.wordName }}</span>
-                  <el-icon class="play-icon" @click="playAudio(scope.row)"><VideoPlay /></el-icon>
+                  <el-tooltip content="播放发音" placement="top">
+                    <el-icon class="play-icon" @click="playAudio(scope.row)"><VideoPlay /></el-icon>
+                  </el-tooltip>
                 </div>
               </template>
             </el-table-column>
@@ -130,27 +133,38 @@
             </el-table-column>
             <el-table-column label="操作" width="150">
               <template #default="scope">
-                <el-button
-                  :type="scope.row.isCollected ? 'danger' : 'default'"
-                  :icon="scope.row.isCollected ? 'Star' : 'StarFilled'"
-                  circle
-                  size="small"
-                  @click="toggleCollection(scope.row)"
-                ></el-button>
-                <el-button
-                  type="primary"
-                  icon="View"
-                  circle
-                  size="small"
-                  @click="viewWordDetail(scope.row)"
-                ></el-button>
-                <el-button
-                  type="success"
-                  icon="Check"
-                  circle
-                  size="small"
-                  @click="markAsLearned(scope.row)"
-                ></el-button>
+                <el-tooltip content="收藏/取消收藏" placement="top">
+                  <el-button
+                    :type="scope.row.isCollected ? 'danger' : 'default'"
+                    circle
+                    size="small"
+                    @click="toggleCollectionStatus(scope.row)"
+                  >
+                    <el-icon>
+                      <component :is="scope.row.isCollected ? Star : StarFilled" />
+                    </el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="查看详情" placement="top">
+                  <el-button
+                    type="primary"
+                    circle
+                    size="small"
+                    @click="viewWordDetail(scope.row)"
+                  >
+                    <el-icon><View /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="标记为已学" placement="top">
+                  <el-button
+                    type="success"
+                    circle
+                    size="small"
+                    @click="markAsLearned(scope.row)"
+                  >
+                    <el-icon><Check /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
           </el-table>
@@ -180,7 +194,11 @@
         <div class="word-header">
           <h2>{{ currentWord.wordName }}</h2>
           <div class="word-phonetic">{{ currentWord.audio }}</div>
-          <el-button type="primary" icon="VideoPlay" circle @click="playAudio(currentWord)"></el-button>
+          <el-tooltip content="播放发音" placement="top">
+            <el-button type="primary" circle @click="playAudio(currentWord)">
+              <el-icon><VideoPlay /></el-icon>
+            </el-button>
+          </el-tooltip>
         </div>
 
         <el-divider></el-divider>
@@ -197,10 +215,10 @@
 
         <div class="word-actions">
           <el-button
-            :type="currentWord.isCollected ? 'danger' : 'default'"
-            @click="toggleCollection(currentWord)"
+            :type="currentWord.collection === 1 ? 'danger' : 'default'"
+            @click="toggleCollectionStatus(currentWord)"
           >
-            {{ currentWord.isCollected ? '取消收藏' : '收藏单词' }}
+            {{ currentWord.collection === 1 ? '取消收藏' : '收藏单词' }}
           </el-button>
           <el-button type="success" @click="markAsLearned(currentWord)">标记为已学</el-button>
           <el-button type="primary" @click="generateWordCard(currentWord)">生成单词卡片</el-button>
@@ -211,24 +229,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, VideoPlay, Star, StarFilled, View, Check } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { getWordList, getWordDetail, getWordStats } from '@/api/word'
+import { markWordAsStudied, markWordAsRemembered, markWordAsForgotten, toggleWordCollection } from '@/api/userword'
+import Cookies from 'js-cookie'
 
 // 筛选表单
 const filterForm = reactive({
   level: '',
-  category: '',
+  // category: '', // 暂时移除分类筛选，因为数据库中没有对应字段
   status: ''
 })
 
 // 学习统计
 const stats = reactive({
-  totalWords: 500,
-  learnedWords: 120,
-  masteredWords: 80,
-  todayWords: 15,
-  progressPercentage: 24
+  totalWords: 0,
+  learnedWords: 0,
+  masteredWords: 0,
+  todayWords: 0,
+  progressPercentage: 0
 })
 
 // 单词列表
@@ -243,14 +264,70 @@ const totalWords = ref(0)
 const wordDetailVisible = ref(false)
 const currentWord = ref(null)
 
+// 获取用户ID
+const userId = computed(() => {
+  const id = Cookies.get('userId')
+  return id ? parseInt(id) : null
+})
+
+// 加载学习统计数据
+const loadStats = async () => {
+  if (!userId.value) {
+    ElMessage.error('未找到用户信息，请重新登录')
+    return
+  }
+
+  try {
+    // 构建查询参数，与单词列表筛选条件保持一致
+    const params: any = {}
+
+    // 添加用户ID
+    params.userId = userId.value
+
+    // 添加筛选条件
+    if (filterForm.level) {
+      params.gradeId = parseInt(filterForm.level)
+    }
+
+    // 添加学习状态筛选
+    if (filterForm.status) {
+      params.status = parseInt(filterForm.status)
+    }
+
+    // 添加搜索关键词
+    if (searchKeyword.value) {
+      params.query = searchKeyword.value
+    }
+
+    const response = await getWordStats(params)
+    if (response.success && response.data) {
+      // 更新统计数据
+      stats.totalWords = response.data.totalWords || 0
+      stats.learnedWords = response.data.learnedWords || 0
+      stats.masteredWords = response.data.masteredWords || 0
+      stats.todayWords = response.data.todayWords || 0
+      stats.progressPercentage = response.data.progressPercentage || 0
+    }
+  } catch (error) {
+    console.error('获取学习统计数据失败:', error)
+    ElMessage.error('获取学习统计数据失败，请稍后重试')
+  }
+}
+
 // 应用筛选
 const applyFilter = () => {
+  currentPage.value = 1
   loadWords()
+  // 重新加载统计数据，使其与筛选条件一致
+  loadStats()
 }
 
 // 处理搜索
 const handleSearch = () => {
+  currentPage.value = 1
   loadWords()
+  // 重新加载统计数据，使其与搜索条件一致
+  loadStats()
 }
 
 // 处理页码变化
@@ -262,16 +339,17 @@ const handleCurrentChange = (val: number) => {
 // 处理每页条数变化
 const handleSizeChange = (val: number) => {
   pageSize.value = val
+  currentPage.value = 1
   loadWords()
 }
 
 // 获取状态类型
 const getStatusType = (status: number) => {
   switch (status) {
-    case 0: return ''
-    case 1: return 'info'
+    case 0: return 'info' // 修改为'info'而不是空字符串
+    case 1: return 'warning'
     case 2: return 'success'
-    default: return ''
+    default: return 'info' // 默认值也修改为'info'
   }
 }
 
@@ -287,81 +365,195 @@ const getStatusText = (status: number) => {
 
 // 播放音频
 const playAudio = (word: any) => {
-  // 这里应该调用API获取音频URL并播放
-  // 模拟播放音频
-  ElMessage.success(`播放单词 ${word.wordName} 的发音`)
+  // 使用有道词典API播放单词发音
+  try {
+    const audio = new Audio(`http://dict.youdao.com/speech?audio=${word.wordName}`);
+    audio.play();
+  } catch (error) {
+    console.error('播放音频失败:', error);
+    ElMessage.error(`播放 ${word.wordName} 的发音失败，请稍后重试`);
+  }
 }
 
 // 切换收藏状态
-const toggleCollection = (word: any) => {
-  // 这里应该调用API切换收藏状态
-  // 模拟切换收藏状态
-  word.isCollected = !word.isCollected
-  ElMessage.success(word.isCollected ? `已收藏单词 ${word.wordName}` : `已取消收藏单词 ${word.wordName}`)
+const toggleCollectionStatus = async (word: any) => {
+  if (!userId.value) {
+    ElMessage.error('请先登录')
+    return
+  }
+
+  try {
+    const response = await toggleWordCollection(userId.value, word.wordId)
+    if (response.success) {
+      // 更新本地状态
+      const isCollected = response.data.collected
+      word.collection = isCollected ? 1 : 0
+      word.isCollected = isCollected
+      ElMessage.success(response.data.message)
+
+      // 如果当前正在查看详情，也更新详情中的状态
+      if (currentWord.value && currentWord.value.wordId === word.wordId) {
+        currentWord.value.collection = word.collection
+        currentWord.value.isCollected = isCollected
+      }
+
+      // 刷新统计数据
+      loadStats()
+    } else {
+      ElMessage.error(response.message || '操作失败')
+    }
+  } catch (error) {
+    console.error('切换收藏状态失败:', error)
+    ElMessage.error('切换收藏状态失败，请稍后重试')
+  }
 }
 
 // 查看单词详情
-const viewWordDetail = (word: any) => {
-  currentWord.value = word
-  wordDetailVisible.value = true
+const viewWordDetail = async (word: any) => {
+  try {
+    const response = await getWordDetail(word.wordId)
+    if (response.success) {
+      currentWord.value = response.data
+      wordDetailVisible.value = true
+    } else {
+      ElMessage.error(response.message || '获取单词详情失败')
+    }
+  } catch (error) {
+    console.error('获取单词详情失败:', error)
+    ElMessage.error('获取单词详情失败，请稍后重试')
+  }
 }
 
 // 标记为已学
-const markAsLearned = (word: any) => {
-  // 这里应该调用API标记单词为已学
-  // 模拟标记为已学
-  if (word.status < 2) {
-    word.status += 1
-    ElMessage.success(`已将单词 ${word.wordName} 标记为${getStatusText(word.status)}`)
-  } else {
-    ElMessage.info(`单词 ${word.wordName} 已经是${getStatusText(word.status)}状态`)
+const markAsLearned = async (word: any) => {
+  if (!userId.value) {
+    ElMessage.error('请先登录')
+    return
+  }
+
+  try {
+    // 先标记为已学习
+    const studyResponse = await markWordAsStudied(userId.value, word.wordId)
+    if (!studyResponse.success) {
+      ElMessage.error(studyResponse.message || '标记为已学习失败')
+      return
+    }
+
+    // 再标记为已掌握
+    const response = await markWordAsRemembered(userId.value, word.wordId)
+    if (response.success) {
+      // 更新本地状态
+      word.remember = 1
+      word.study = 1
+      word.status = 2 // 已掌握
+      ElMessage.success(response.data.message || '单词已标记为已学')
+
+      // 如果当前正在查看详情，也更新详情中的状态
+      if (currentWord.value && currentWord.value.wordId === word.wordId) {
+        currentWord.value.remember = 1
+        currentWord.value.study = 1
+        currentWord.value.status = 2
+      }
+
+      // 刷新统计数据
+      loadStats()
+    } else {
+      ElMessage.error(response.message || '操作失败')
+    }
+  } catch (error) {
+    console.error('标记单词状态失败:', error)
+    ElMessage.error('标记单词状态失败，请稍后重试')
   }
 }
 
 // 生成单词卡片
 const generateWordCard = (word: any) => {
-  // 这里应该调用API生成单词卡片
-  // 模拟生成单词卡片
-  ElMessage.success(`已为单词 ${word.wordName} 生成单词卡片`)
+  // 目前没有生成单词卡片的API，只显示提示
+  ElMessage.info(`单词卡片生成功能正在开发中`)
 }
 
 // 开始学习
 const startLearning = () => {
-  // 这里应该跳转到单词学习页面
-  // 模拟开始学习
-  ElMessage.success('开始学习单词')
+  // 跳转到单词学习页面
+  window.location.href = '/word-learning'
 }
 
 // 加载单词列表
-const loadWords = () => {
+const loadWords = async () => {
   loading.value = true
 
-  // 这里应该调用API获取单词列表
-  // 模拟获取单词列表
-  setTimeout(() => {
-    const mockWords = []
-    for (let i = 1; i <= pageSize.value; i++) {
-      const index = (currentPage.value - 1) * pageSize.value + i
-      mockWords.push({
-        wordId: index,
-        wordName: `word${index}`,
-        audio: '[wɜːd]',
-        explanation: `单词${index}的释义`,
-        example: `This is an example sentence for word${index}.`,
-        status: Math.floor(Math.random() * 3),
-        isCollected: Math.random() > 0.7
-      })
+  try {
+    // 构建查询参数
+    const params: any = {
+      page: currentPage.value,
+      size: pageSize.value
     }
 
-    wordsList.value = mockWords
-    totalWords.value = 500
+    // 添加筛选条件
+    if (filterForm.level) {
+      params.gradeId = parseInt(filterForm.level)
+    }
+
+    // 暂时移除分类筛选，因为数据库中没有对应字段
+    // if (filterForm.category) {
+    //   params.category = filterForm.category
+    // }
+
+    // 添加学习状态筛选
+    if (filterForm.status) {
+      params.status = parseInt(filterForm.status)
+    }
+
+    // 添加用户ID
+    const id = userId.value
+    if (id) {
+      params.userId = id
+    }
+
+    // 添加搜索关键词
+    if (searchKeyword.value) {
+      params.query = searchKeyword.value
+    }
+
+    const response = await getWordList(params)
+    if (response.success && response.data) {
+      // 处理返回的数据
+      wordsList.value = response.data.list || []
+
+      // 设置总数量
+      totalWords.value = response.data.total || 0
+
+      // 处理单词状态显示
+      wordsList.value.forEach(word => {
+        // 将remember和study字段映射到status字段用于显示
+        if (word.remember === 1) {
+          word.status = 2 // 已掌握
+        } else if (word.study === 1) {
+          word.status = 1 // 已学习
+        } else {
+          word.status = 0 // 未学习
+        }
+
+        // 将collection字段映射到isCollected字段用于显示
+        word.isCollected = word.collection === 1
+      })
+    } else {
+      ElMessage.error(response.message || '获取单词列表失败')
+    }
+  } catch (error) {
+    console.error('获取单词列表失败:', error)
+    ElMessage.error('获取单词列表失败，请稍后重试')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 页面加载时获取数据
 onMounted(() => {
-  loadWords()
+  loadWords().then(() => {
+    // 在获取单词列表后再加载统计数据，确保totalWords已经有值
+    loadStats()
+  })
 })
 </script>
 

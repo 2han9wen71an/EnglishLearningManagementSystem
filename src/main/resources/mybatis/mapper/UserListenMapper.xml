@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--namespace：绑定一个对应的Dao/Mapper接口-->
+<mapper namespace="com.chun.myspringboot.mapper.UserListenMapper">
+
+    <!--
+    #######################################################
+                        增加
+    #######################################################
+    -->
+    <!--添加用户听力练习关联-->
+    <insert id="addUserListen" parameterType="UserListen" useGeneratedKeys="true" keyProperty="id">
+        insert into user_listen(userId, listenId, completed, completionTime)
+        values (#{userId}, #{listenId}, #{completed}, #{completionTime})
+    </insert>
+
+    <!--
+    #######################################################
+                        删除
+    #######################################################
+    -->
+    <!--删除用户听力练习关联-->
+    <delete id="deleteUserListen" parameterType="Integer">
+        delete from user_listen where id=#{id}
+    </delete>
+
+    <!--
+    #######################################################
+                        修改
+    #######################################################
+    -->
+    <!--更新用户听力练习关联-->
+    <update id="updateUserListen" parameterType="UserListen">
+        update user_listen set
+        userId=#{userId}, listenId=#{listenId}, completed=#{completed}, completionTime=#{completionTime}
+        where id=#{id}
+    </update>
+
+    <!--
+    #######################################################
+                        查询
+    #######################################################
+    -->
+    <!--根据ID查询用户听力练习关联-->
+    <select id="queryUserListenById" resultType="UserListen">
+        select * from user_listen where id=#{id}
+    </select>
+
+    <!--根据用户ID和听力ID查询用户听力练习关联-->
+    <select id="queryUserListenByUserIdAndListenId" resultType="UserListen">
+        select * from user_listen where userId=#{param1} and listenId=#{param2} limit 1
+    </select>
+
+    <!--根据用户ID查询用户听力练习关联-->
+    <select id="queryUserListensByUserId" resultType="UserListen">
+        select * from user_listen where userId=#{userId}
+    </select>
+
+    <!--根据听力ID查询用户听力练习关联-->
+    <select id="queryUserListensByListenId" resultType="UserListen">
+        select * from user_listen where listenId=#{listenId}
+    </select>
+
+    <!--获取用户已完成的听力练习数量-->
+    <select id="queryUserCompletedListeningCount" resultType="int">
+        SELECT COUNT(*) FROM user_listen WHERE userId=#{userId} AND completed=1
+    </select>
+
+</mapper>

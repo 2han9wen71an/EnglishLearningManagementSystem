@@ -159,6 +159,30 @@ public class WordServiceImpl implements WordService {
         return wordMapper.queryStudyNumberByGrade(grade);
     }
 
+    @Autowired
+    private UserWordServiceImpl userWordService;
 
+    @Override
+    public int queryUserLearnedWordsCount(Integer userId) {
+        return userWordService.queryUserLearnedWordsCount(userId);
+    }
 
+    @Override
+    public List<Word> searchWords(String query, Integer gradeId, Integer status, Integer userId, Integer page, Integer size) {
+        // 使用PageHelper进行分页
+        if (page != null && size != null) {
+            PageHelper.startPage(page, size);
+        }
+        return wordMapper.searchWords(query, gradeId, status, userId);
+    }
+
+    @Override
+    public int countSearchWords(String query, Integer gradeId, Integer status, Integer userId) {
+        return wordMapper.countSearchWords(query, gradeId, status, userId);
+    }
+
+    @Override
+    public int getTotalWordsCount() {
+        return wordMapper.getTotalWordsCount();
+    }
 }

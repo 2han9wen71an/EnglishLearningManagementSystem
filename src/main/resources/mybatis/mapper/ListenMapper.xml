@@ -27,5 +27,9 @@
         where listenId=#{listenId}
     </update>
 
+    <!--获取总听力练习数量-->
+    <select id="queryTotalListeningCount" resultType="int">
+        SELECT COUNT(*) FROM listen
+    </select>
 
 </mapper>

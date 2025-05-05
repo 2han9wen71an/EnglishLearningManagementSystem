@@ -9,6 +9,7 @@ import com.chun.myspringboot.pojo.ExamAnswer;
 import com.chun.myspringboot.pojo.ExamQuestion;
 import com.chun.myspringboot.pojo.ExamRecord;
 import com.chun.myspringboot.service.AIEssayScoreService;
+import com.chun.myspringboot.service.ActivityRecordService;
 import com.chun.myspringboot.service.AsyncTaskService;
 import com.chun.myspringboot.service.ExamRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,9 @@ public class ExamRecordServiceImpl implements ExamRecordService {
         return examRecordMapper.queryRecordsByStatus(status);
     }
 
+    @Autowired
+    private ActivityRecordService activityRecordService;
+
     @Override
     @Transactional
     public ExamRecord startExam(Integer userId, Integer examId) {
@@ -101,7 +105,27 @@ public class ExamRecordServiceImpl implements ExamRecordService {
         record.setStartTime(new Date());
         record.setStatus(0); // 进行中
 
-        examRecordMapper.addRecord(record);
+        int result = examRecordMapper.addRecord(record);
+
+        // 如果添加成功，记录活动
+        if (result > 0) {
+            try {
+                // 获取考试信息
+                Exam exam = examMapper.queryExamById(examId);
+                if (exam != null) {
+                    // 记录考试活动
+                    activityRecordService.recordExamActivity(
+                            userId,
+                            examId,
+                            exam.getTitle()
+                    );
+                }
+            } catch (Exception e) {
+                // 记录活动失败不影响主要业务
+                e.printStackTrace();
+            }
+        }
+
         return record;
     }
 

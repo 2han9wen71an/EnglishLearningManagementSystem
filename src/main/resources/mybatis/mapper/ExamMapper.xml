@@ -9,12 +9,12 @@
         INSERT INTO exam (title, description, duration, total_score, pass_score, grade_id, create_time, status)
         VALUES (#{title}, #{description}, #{duration}, #{totalScore}, #{passScore}, #{gradeId}, #{createTime}, #{status})
     </insert>
-    
+
     <!-- 删除考试 -->
     <delete id="deleteExam" parameterType="Integer">
         DELETE FROM exam WHERE exam_id = #{examId}
     </delete>
-    
+
     <!-- 更新考试 -->
     <update id="updateExam" parameterType="Exam">
         UPDATE exam
@@ -27,7 +27,7 @@
             status = #{status}
         WHERE exam_id = #{examId}
     </update>
-    
+
     <!-- 根据ID查询考试 -->
     <select id="queryExamById" resultType="Exam">
         SELECT e.*, g.gradeName
@@ -35,7 +35,7 @@
         LEFT JOIN grade g ON e.grade_id = g.gradeId
         WHERE e.exam_id = #{examId}
     </select>
-    
+
     <!-- 查询所有考试 -->
     <select id="queryAllExams" resultType="Exam">
         SELECT e.*, g.gradeName
@@ -43,7 +43,7 @@
         LEFT JOIN grade g ON e.grade_id = g.gradeId
         ORDER BY e.create_time DESC
     </select>
-    
+
     <!-- 根据等级ID查询考试 -->
     <select id="queryExamsByGradeId" resultType="Exam">
         SELECT e.*, g.gradeName
@@ -52,7 +52,7 @@
         WHERE e.grade_id = #{gradeId}
         ORDER BY e.create_time DESC
     </select>
-    
+
     <!-- 查询启用状态的考试 -->
     <select id="queryEnabledExams" resultType="Exam">
         SELECT e.*, g.gradeName
@@ -60,5 +60,19 @@
         LEFT JOIN grade g ON e.grade_id = g.gradeId
         WHERE e.status = 1
         ORDER BY e.create_time DESC
+    </select>
+
+    <!-- 获取用户参加的考试次数 -->
+    <select id="queryUserExamCount" resultType="int">
+        SELECT COUNT(*)
+        FROM exam_record
+        WHERE user_id = #{userId} AND status IN (1, 2)
+    </select>
+
+    <!-- 获取用户考试平均分 -->
+    <select id="queryUserExamAverageScore" resultType="double">
+        SELECT IFNULL(AVG(score), 0)
+        FROM exam_record
+        WHERE user_id = #{userId} AND status = 2 AND score IS NOT NULL
     </select>
 </mapper>

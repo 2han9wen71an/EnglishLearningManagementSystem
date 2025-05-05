@@ -15,4 +15,17 @@ public interface ListenService {
     int updateListen(Listen listen);
     //查看所有听力所有信息
     List<Listen> queryAllListen();
+
+    /**
+     * 获取用户已完成的听力练习数量
+     * @param userId 用户ID
+     * @return 已完成的听力练习数量
+     */
+    int queryUserCompletedListeningCount(Integer userId);
+
+    /**
+     * 获取总听力练习数量
+     * @return 总听力练习数量
+     */
+    int queryTotalListeningCount();
 }

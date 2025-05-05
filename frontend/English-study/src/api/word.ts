@@ -1,9 +1,18 @@
 import request from '@/utils/request'
 
 // 获取单词列表
-export function getWordList(params: { gradeId?: number; page?: number; size?: number; query?: string }) {
+export function getWordList(params: { gradeId?: number; page?: number; size?: number; query?: string; status?: number; userId?: number }) {
   return request({
     url: '/words',
+    method: 'get',
+    params
+  })
+}
+
+// 获取单词统计数据（支持筛选）
+export function getWordStats(params: { userId?: number; gradeId?: number; status?: number; query?: string }) {
+  return request({
+    url: '/words/stats',
     method: 'get',
     params
   })
