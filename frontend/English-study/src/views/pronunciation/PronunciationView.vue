@@ -167,7 +167,8 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Microphone } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
+import { getUserId } from '@/utils/auth'
 
 // 数据
 const loading = ref(true)
@@ -199,8 +200,11 @@ const sampleTexts = [
 const fetchAssessmentHistory = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/pronunciations/user/' + getUserId())
-    assessmentHistory.value = response.data.data || []
+    const response = await request({
+      url: `/pronunciations/user/${getUserId()}`,
+      method: 'get'
+    })
+    assessmentHistory.value = response.data || []
   } catch (error) {
     console.error('获取评测历史失败:', error)
     ElMessage.error('获取评测历史失败，请稍后重试')
@@ -209,11 +213,7 @@ const fetchAssessmentHistory = async () => {
   }
 }
 
-const getUserId = () => {
-  // 从localStorage或其他存储中获取用户ID
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  return userInfo.userId || 1 // 默认返回1，实际应用中应该返回真实用户ID
-}
+// 使用auth工具类中的getUserId方法
 
 const selectSampleText = () => {
   if (assessmentForm.sampleText) {
@@ -301,27 +301,30 @@ const submitAssessment = async () => {
     formData.append('audioData', audioBlob, 'recording.wav')
 
     // 发送请求
-    const result = await axios.post('/api/pronunciations', formData, {
+    const result = await request({
+      url: '/pronunciations',
+      method: 'post',
+      data: formData,
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
 
-    if (result.data.success) {
+    if (result.success) {
       ElMessage.success('评测提交成功')
 
       // 刷新历史记录
       await fetchAssessmentHistory()
 
       // 显示结果
-      viewAssessment(result.data.data)
+      viewAssessment(result.data)
 
       // 重置表单
       assessmentForm.text = ''
       assessmentForm.sampleText = ''
       audioUrl.value = ''
     } else {
-      ElMessage.error(result.data.message || '评测提交失败')
+      ElMessage.error(result.message || '评测提交失败')
     }
   } catch (error) {
     console.error('提交评测失败:', error)
@@ -334,10 +337,13 @@ const submitAssessment = async () => {
 const viewAssessment = async (assessment: any) => {
   try {
     // 获取评测详情
-    const response = await axios.get(`/api/pronunciations/${assessment.assessmentId}`)
+    const response = await request({
+      url: `/pronunciations/${assessment.assessmentId}`,
+      method: 'get'
+    })
 
-    if (response.data.success) {
-      currentAssessment.value = response.data.data
+    if (response.success) {
+      currentAssessment.value = response.data
 
       // 解析发音问题
       try {
@@ -349,7 +355,7 @@ const viewAssessment = async (assessment: any) => {
 
       resultDialogVisible.value = true
     } else {
-      ElMessage.error(response.data.message || '获取评测详情失败')
+      ElMessage.error(response.message || '获取评测详情失败')
     }
   } catch (error) {
     console.error('获取评测详情失败:', error)

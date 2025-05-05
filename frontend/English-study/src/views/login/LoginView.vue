@@ -67,7 +67,7 @@ import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElForm } from 'element-plus'
 import { Message, Lock } from '@element-plus/icons-vue'
-import Cookies from 'js-cookie'
+import { setToken, setUserId, setUserRole, setUserInfo } from '@/utils/auth'
 import { login } from '@/api/user'
 
 const router = useRouter()
@@ -103,11 +103,11 @@ const handleLogin = () => {
         const res = await login(loginForm)
         if (res.success) {
           // 保存token和用户信息
-          Cookies.set('token', res.data.token, { expires: rememberMe.value ? 7 : 1 })
-          // 保存用户角色，用于权限验证
-          Cookies.set('role', String(res.data.role), { expires: rememberMe.value ? 7 : 1 })
-          Cookies.set('userId', String(res.data.userId), { expires: rememberMe.value ? 7 : 1 })
-          localStorage.setItem('userInfo', JSON.stringify(res.data))
+          const expiresIn = rememberMe.value ? 7 : 1
+          setToken(res.data.token, expiresIn)
+          setUserRole(String(res.data.role), expiresIn)
+          setUserId(String(res.data.userId), expiresIn)
+          setUserInfo(res.data)
 
           ElMessage.success('登录成功')
 

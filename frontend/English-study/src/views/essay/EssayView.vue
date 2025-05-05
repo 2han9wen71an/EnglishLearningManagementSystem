@@ -166,7 +166,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import request from '@/utils/request'
+import { getUserId } from '@/utils/auth'
 
 // 数据
 const loading = ref(true)
@@ -200,10 +201,12 @@ const essayRules = {
 const fetchEssays = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/essays', {
+    const response = await request({
+      url: '/essays',
+      method: 'get',
       params: { userId: getUserId() }
     })
-    essays.value = response.data.data || []
+    essays.value = response.data || []
   } catch (error) {
     console.error('获取作文列表失败:', error)
     ElMessage.error('获取作文列表失败，请稍后重试')
@@ -218,11 +221,7 @@ const formatDate = (dateString: string) => {
   return date.toLocaleString()
 }
 
-const getUserId = () => {
-  // 从localStorage或其他存储中获取用户ID
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  return userInfo.userId || 1 // 默认返回1，实际应用中应该返回真实用户ID
-}
+// 使用auth工具类中的getUserId方法
 
 const submitEssay = async () => {
   if (!essayFormRef.value) return
@@ -230,12 +229,16 @@ const submitEssay = async () => {
   await essayFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
-        const response = await axios.post('/api/essays', {
-          ...essayForm,
-          userId: getUserId()
+        const response = await request({
+          url: '/essays',
+          method: 'post',
+          data: {
+            ...essayForm,
+            userId: getUserId()
+          }
         })
 
-        if (response.data.success) {
+        if (response.success) {
           ElMessage.success('作文提交成功')
           showWriteEssay.value = false
           fetchEssays()
@@ -243,7 +246,7 @@ const submitEssay = async () => {
           essayForm.title = ''
           essayForm.content = ''
         } else {
-          ElMessage.error(response.data.message || '提交失败，请稍后重试')
+          ElMessage.error(response.message || '提交失败，请稍后重试')
         }
       } catch (error) {
         console.error('提交作文失败:', error)
@@ -260,9 +263,12 @@ const viewEssay = async (essay: any) => {
   // 如果已批改，获取批改结果
   if (essay.status === 1) {
     try {
-      const response = await axios.get(`/api/essays/${essay.essayId}/correction`)
-      if (response.data.success) {
-        correction.value = response.data.data
+      const response = await request({
+        url: `/essays/${essay.essayId}/correction`,
+        method: 'get'
+      })
+      if (response.success) {
+        correction.value = response.data
 
         // 解析语法错误和词汇建议
         try {
@@ -290,9 +296,12 @@ const correctEssay = async (essay: any) => {
 
   try {
     correctingEssay.value = true
-    const response = await axios.post(`/api/essays/${essay.essayId}/correct`)
+    const response = await request({
+      url: `/essays/${essay.essayId}/correct`,
+      method: 'post'
+    })
 
-    if (response.data.success) {
+    if (response.success) {
       ElMessage.success('批改成功')
       // 刷新作文列表
       fetchEssays()
@@ -305,7 +314,7 @@ const correctEssay = async (essay: any) => {
         viewEssay(currentEssay.value)
       }
     } else {
-      ElMessage.error(response.data.message || '批改失败，请稍后重试')
+      ElMessage.error(response.message || '批改失败，请稍后重试')
     }
   } catch (error) {
     console.error('批改作文失败:', error)
@@ -322,8 +331,11 @@ const deleteEssay = (essay: any) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const response = await axios.delete(`/api/essays/${essay.essayId}`)
-      if (response.data.success) {
+      const response = await request({
+        url: `/essays/${essay.essayId}`,
+        method: 'delete'
+      })
+      if (response.success) {
         ElMessage.success('删除成功')
         // 如果在详情页且删除的是当前查看的作文，返回列表
         if (showEssayDetail.value && currentEssay.value && currentEssay.value.essayId === essay.essayId) {
@@ -332,7 +344,7 @@ const deleteEssay = (essay: any) => {
         // 刷新作文列表
         fetchEssays()
       } else {
-        ElMessage.error(response.data.message || '删除失败，请稍后重试')
+        ElMessage.error(response.message || '删除失败，请稍后重试')
       }
     } catch (error) {
       console.error('删除作文失败:', error)

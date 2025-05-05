@@ -287,7 +287,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import request from '@/utils/request'
+import { getUserId } from '@/utils/auth'
 
 // 数据
 const loading = ref(true)
@@ -308,8 +309,11 @@ const examHistory = ref<any[]>([])
 const fetchExams = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/exams')
-    exams.value = response.data.data || []
+    const response = await request({
+      url: '/exams',
+      method: 'get'
+    })
+    exams.value = response.data || []
   } catch (error) {
     console.error('获取考试列表失败:', error)
     ElMessage.error('获取考试列表失败，请稍后重试')
@@ -331,12 +335,16 @@ const backToList = () => {
 
 const startExam = async () => {
   try {
-    const response = await axios.post(`/api/exams/${currentExam.value.examId}/start`, {
-      userId: getUserId()
+    const response = await request({
+      url: `/exams/${currentExam.value.examId}/start`,
+      method: 'post',
+      data: {
+        userId: getUserId()
+      }
     })
 
-    if (response.data.success) {
-      examRecord.value = response.data.data
+    if (response.success) {
+      examRecord.value = response.data
 
       // 获取考试题目
       await fetchQuestions()
@@ -352,7 +360,7 @@ const startExam = async () => {
 
       ElMessage.success('考试开始')
     } else {
-      ElMessage.error(response.data.message || '开始考试失败')
+      ElMessage.error(response.message || '开始考试失败')
     }
   } catch (error) {
     console.error('开始考试失败:', error)
@@ -362,8 +370,11 @@ const startExam = async () => {
 
 const fetchQuestions = async () => {
   try {
-    const response = await axios.get(`/api/exams/${currentExam.value.examId}/questions`)
-    questions.value = response.data.data || []
+    const response = await request({
+      url: `/exams/${currentExam.value.examId}/questions`,
+      method: 'get'
+    })
+    questions.value = response.data || []
     currentQuestionIndex.value = 0
   } catch (error) {
     console.error('获取考试题目失败:', error)
@@ -371,11 +382,7 @@ const fetchQuestions = async () => {
   }
 }
 
-const getUserId = () => {
-  // 从localStorage或其他存储中获取用户ID
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  return userInfo.userId || 1 // 默认返回1，实际应用中应该返回真实用户ID
-}
+// 使用auth工具类中的getUserId方法
 
 const startTimer = () => {
   timer.value = setInterval(() => {
@@ -460,21 +467,28 @@ const submitExam = async () => {
       })
     }
 
-    const response = await axios.post(`/api/exams/records/${examRecord.value.recordId}/submit`, {
-      answers
+    const response = await request({
+      url: `/exams/records/${examRecord.value.recordId}/submit`,
+      method: 'post',
+      data: {
+        answers
+      }
     })
 
-    if (response.data.success) {
+    if (response.success) {
       clearInterval(timer.value as number)
       clearAnswersFromStorage()
 
       // 获取考试结果
-      const resultResponse = await axios.get(`/api/exams/records/${examRecord.value.recordId}`)
-      examRecord.value = resultResponse.data.data
+      const resultResponse = await request({
+        url: `/exams/records/${examRecord.value.recordId}`,
+        method: 'get'
+      })
+      examRecord.value = resultResponse.data
 
       ElMessage.success('考试提交成功')
     } else {
-      ElMessage.error(response.data.message || '提交失败，请稍后重试')
+      ElMessage.error(response.message || '提交失败，请稍后重试')
     }
   } catch (error) {
     console.error('提交考试失败:', error)
@@ -487,8 +501,11 @@ const viewExamHistory = async () => {
   showHistory.value = true
 
   try {
-    const response = await axios.get(`/api/exams/records/user/${getUserId()}`)
-    examHistory.value = response.data.data || []
+    const response = await request({
+      url: `/exams/records/user/${getUserId()}`,
+      method: 'get'
+    })
+    examHistory.value = response.data || []
   } catch (error) {
     console.error('获取考试历史失败:', error)
     ElMessage.error('获取考试历史失败，请稍后重试')

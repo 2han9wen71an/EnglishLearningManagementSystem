@@ -28,16 +28,16 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
-import Cookies from 'js-cookie'
+import { getUserInfo, clearAuth } from '@/utils/auth'
 
 const router = useRouter()
 const userName = ref('用户名')
 const userAvatar = ref('')
 
-// 模拟获取用户信息
+// 获取用户信息
 onMounted(() => {
-  // 这里应该从store或API获取用户信息
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  // 从auth工具类获取用户信息
+  const userInfo = getUserInfo() || {}
   userName.value = userInfo.userName || '用户名'
   userAvatar.value = userInfo.avatar || ''
 })
@@ -55,10 +55,9 @@ const handleCommand = (command: string) => {
       type: 'warning'
     })
       .then(() => {
-        // 清除token和用户信息
-        Cookies.remove('token')
-        localStorage.removeItem('userInfo')
-        
+        // 清除所有认证信息
+        clearAuth()
+
         // 跳转到登录页
         router.push('/login')
         ElMessage({

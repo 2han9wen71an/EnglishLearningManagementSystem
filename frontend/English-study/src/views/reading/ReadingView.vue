@@ -136,7 +136,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Reading, Picture, Star, Edit } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
 
 // 数据
 const loading = ref(true)
@@ -159,8 +159,11 @@ const wordDetail = reactive({
 const fetchBooks = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/books')
-    books.value = response.data.data || []
+    const response = await request({
+      url: '/books',
+      method: 'get'
+    })
+    books.value = response.data || []
     filteredBooks.value = [...books.value]
   } catch (error) {
     console.error('获取书籍列表失败:', error)
@@ -185,8 +188,11 @@ const filterBooks = () => {
 
 const selectBook = async (book: any) => {
   try {
-    const response = await axios.get(`/api/books/${book.bookId}`)
-    currentBook.value = response.data.data
+    const response = await request({
+      url: `/books/${book.bookId}`,
+      method: 'get'
+    })
+    currentBook.value = response.data
     currentPage.value = 1
 
     // 计算总页数，假设每页显示1000个字符

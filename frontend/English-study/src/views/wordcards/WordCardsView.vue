@@ -163,8 +163,9 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Picture, Document } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
 import QRCode from 'qrcode'
+import { getUserId } from '@/utils/auth'
 
 // 数据
 const wordFormRef = ref()
@@ -196,13 +197,17 @@ const generateWordCard = async () => {
       generating.value = true
 
       try {
-        const response = await axios.post('/api/wordcards/generate', {
-          word: wordForm.word,
-          userId: getUserId()
+        const response = await request({
+          url: '/wordcards/generate',
+          method: 'post',
+          data: {
+            word: wordForm.word,
+            userId: getUserId()
+          }
         })
 
-        if (response.data.success) {
-          currentCard.value = response.data.data
+        if (response.success) {
+          currentCard.value = response.data
           ElMessage.success('单词卡片生成成功')
 
           // 如果正在显示历史，刷新历史列表
@@ -222,11 +227,7 @@ const generateWordCard = async () => {
   })
 }
 
-const getUserId = () => {
-  // 从localStorage或其他存储中获取用户ID
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  return userInfo.userId || 1 // 默认返回1，实际应用中应该返回真实用户ID
-}
+// 使用auth工具类中的getUserId方法
 
 const viewHistory = async () => {
   showHistory.value = !showHistory.value
@@ -240,8 +241,11 @@ const fetchCardHistory = async () => {
   loadingHistory.value = true
 
   try {
-    const response = await axios.get(`/api/wordcards/user/${getUserId()}`)
-    cardHistory.value = response.data.data || []
+    const response = await request({
+      url: `/wordcards/user/${getUserId()}`,
+      method: 'get'
+    })
+    cardHistory.value = response.data || []
   } catch (error) {
     console.error('获取单词卡片历史失败:', error)
     ElMessage.error('获取单词卡片历史失败，请稍后重试')

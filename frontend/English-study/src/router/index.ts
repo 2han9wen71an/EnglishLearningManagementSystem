@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Cookies from 'js-cookie'
 import { ElMessage } from 'element-plus'
+import { isAuthenticated, isAdmin } from '@/utils/auth'
 
 // 布局组件
 const MainLayout = () => import('@/layouts/MainLayout.vue')
@@ -216,8 +216,7 @@ router.beforeEach((to, from, next) => {
 
   // 检查是否需要登录权限
   if (to.meta.requiresAuth) {
-    const token = Cookies.get('token')
-    if (!token) {
+    if (!isAuthenticated()) {
       ElMessage.warning('请先登录')
       next({ name: 'Login', query: { redirect: to.fullPath } })
       return
@@ -225,11 +224,8 @@ router.beforeEach((to, from, next) => {
 
     // 检查是否需要管理员权限
     if (to.meta.requiresAdmin) {
-      const role = Cookies.get('role')
-      console.log('当前用户角色:', role) // 调试用
-
-      // 检查用户是否是管理员（角色值为1）
-      if (role !== '1') {
+      // 检查用户是否是管理员
+      if (!isAdmin()) {
         ElMessage.error('您没有管理员权限')
         next({ path: '/dashboard' })
         return

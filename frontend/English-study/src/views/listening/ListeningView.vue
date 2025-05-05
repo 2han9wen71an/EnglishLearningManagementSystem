@@ -127,7 +127,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from '@/utils/request'
 
 // 数据
 const loading = ref(true)
@@ -157,8 +157,11 @@ const scoreStatus = computed(() => {
 const searchListens = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/listens')
-    listens.value = response.data.data || []
+    const response = await request({
+      url: '/listens',
+      method: 'get'
+    })
+    listens.value = response.data || []
   } catch (error) {
     console.error('获取听力列表失败:', error)
     ElMessage.error('获取听力列表失败，请稍后重试')

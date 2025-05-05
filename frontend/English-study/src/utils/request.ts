@@ -47,20 +47,6 @@ service.interceptors.response.use(
         duration: 5 * 1000
       })
 
-      // 401: 未登录或token过期
-      if (response.status === 401) {
-        // 重新登录
-        ElMessageBox.confirm('您已登出，可以取消继续留在该页面，或者重新登录', '确定登出', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          // 清除token
-          Cookies.remove('token')
-          // 跳转到登录页面
-          location.href = '/login'
-        })
-      }
       return Promise.reject(new Error(res.message || '请求失败'))
     } else {
       return res
@@ -68,12 +54,70 @@ service.interceptors.response.use(
   },
   (error) => {
     NProgress.done()
-    console.log('err' + error)
-    ElMessage({
-      message: error.message || '请求失败',
-      type: 'error',
-      duration: 5 * 1000
-    })
+
+    // 处理HTTP状态码错误
+    if (error.response) {
+      const { status } = error.response
+
+      // 401: 未登录或token过期
+      if (status === 401) {
+        // 清除token和用户信息
+        Cookies.remove('token')
+        Cookies.remove('userId')
+        Cookies.remove('role')
+        localStorage.removeItem('userInfo')
+
+        // 重新登录
+        ElMessageBox.confirm('您的登录已过期，请重新登录', '登录过期', {
+          confirmButtonText: '重新登录',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          // 跳转到登录页面
+          location.href = '/login'
+        })
+      }
+      // 403: 权限不足
+      else if (status === 403) {
+        ElMessage({
+          message: '权限不足，无法访问',
+          type: 'error',
+          duration: 5 * 1000
+        })
+      }
+      // 404: 资源不存在
+      else if (status === 404) {
+        ElMessage({
+          message: '请求的资源不存在',
+          type: 'error',
+          duration: 5 * 1000
+        })
+      }
+      // 500: 服务器错误
+      else if (status === 500) {
+        ElMessage({
+          message: '服务器错误，请联系管理员',
+          type: 'error',
+          duration: 5 * 1000
+        })
+      }
+      // 其他错误
+      else {
+        ElMessage({
+          message: error.response.data?.message || '请求失败',
+          type: 'error',
+          duration: 5 * 1000
+        })
+      }
+    } else {
+      // 网络错误
+      ElMessage({
+        message: '网络错误，请检查您的网络连接',
+        type: 'error',
+        duration: 5 * 1000
+      })
+    }
+
     return Promise.reject(error)
   }
 )
