@@ -5,11 +5,11 @@ spring:
     password: password
     driver-class-name:  com.mysql.cj.jdbc.Driver
 
-
-
   mvc:
     #配置它以后移动html页面就不用改路径了！
     static-path-pattern: /static/**    #静态资源的请求方式
+    pathmatch:
+      matching-strategy: ant_path_matcher  # 解决Swagger 3.0.0与Spring Boot 2.6.x以上版本的兼容问题
   resources:
     static-locations: classpath:/static/  # 静态资源的配置位置，可以写成一个数组配置多个目录
 
@@ -63,3 +63,16 @@ siliconflow:
     url: https://api.siliconflow.cn/v1/images/generations  # 图像生成API URL
     model: black-forest-labs/FLUX.1-schnell  # 图像生成模型ID
 
+# JWT配置
+jwt:
+  secret: EnglishLearningSystemSecretKey  # JWT密钥
+  expiration: 86400  # Token有效期（秒），默认24小时
+  tokenPrefix: Bearer  # Token前缀
+  header: Authorization  # 存放Token的Header Key
+
+# Swagger配置
+springfox:
+  documentation:
+    swagger:
+      v2:
+        path: /v2/api-docs  # Swagger API文档路径
