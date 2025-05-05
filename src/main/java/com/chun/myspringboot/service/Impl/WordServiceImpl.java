@@ -125,7 +125,7 @@ public class WordServiceImpl implements WordService {
 
     @Override
     public List<Word> queryAllRemember() {
-        return queryAllRemember();
+        return wordMapper.queryAllRemember();
     }
 
     @Override
