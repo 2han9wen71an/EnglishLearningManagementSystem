@@ -155,12 +155,22 @@
                     <el-icon><View /></el-icon>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip content="标记为已学" placement="top">
+                <el-tooltip content="标记为已学" placement="top" v-if="scope.row.status !== 2">
                   <el-button
                     type="success"
                     circle
                     size="small"
                     @click="markAsLearned(scope.row)"
+                  >
+                    <el-icon><Check /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="已掌握" placement="top" v-else>
+                  <el-button
+                    type="success"
+                    circle
+                    size="small"
+                    disabled
                   >
                     <el-icon><Check /></el-icon>
                   </el-button>
@@ -220,7 +230,20 @@
           >
             {{ currentWord.collection === 1 ? '取消收藏' : '收藏单词' }}
           </el-button>
-          <el-button type="success" @click="markAsLearned(currentWord)">标记为已学</el-button>
+          <el-button
+            v-if="currentWord.status !== 2"
+            type="success"
+            @click="markAsLearned(currentWord)"
+          >
+            标记为已学
+          </el-button>
+          <el-button
+            v-else
+            type="success"
+            disabled
+          >
+            已掌握
+          </el-button>
           <el-button type="primary" @click="generateWordCard(currentWord)">生成单词卡片</el-button>
         </div>
       </div>
@@ -233,7 +256,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { Search, VideoPlay, Star, StarFilled, View, Check } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getWordList, getWordDetail, getWordStats } from '@/api/word'
-import { markWordAsStudied, markWordAsRemembered, markWordAsForgotten, toggleWordCollection } from '@/api/userword'
+import { markWordAsStudied, markWordAsRemembered, markWordAsForgotten, toggleWordCollection, getUserWords, getUserWord } from '@/api/userword'
 import Cookies from 'js-cookie'
 
 // 筛选表单
@@ -413,7 +436,49 @@ const viewWordDetail = async (word: any) => {
   try {
     const response = await getWordDetail(word.wordId)
     if (response.success) {
+      // 获取单词详情
       currentWord.value = response.data
+
+      // 确保保留当前单词的用户状态
+      if (word.isCollected !== undefined) {
+        currentWord.value.isCollected = word.isCollected
+        currentWord.value.collection = word.collection
+      }
+
+      if (word.status !== undefined) {
+        currentWord.value.status = word.status
+        currentWord.value.remember = word.remember
+        currentWord.value.study = word.study
+      }
+
+      // 如果用户已登录，尝试获取用户单词关联信息
+      const id = userId.value
+      if (id) {
+        try {
+          const userWordResponse = await getUserWord(id, word.wordId)
+          if (userWordResponse.success && userWordResponse.data) {
+            // 更新单词状态
+            const userWord = userWordResponse.data
+            currentWord.value.remember = userWord.remember
+            currentWord.value.study = userWord.study
+            currentWord.value.collection = userWord.collection
+
+            // 更新显示状态
+            if (userWord.remember === 1) {
+              currentWord.value.status = 2 // 已掌握
+            } else if (userWord.study === 1) {
+              currentWord.value.status = 1 // 已学习
+            } else {
+              currentWord.value.status = 0 // 未学习
+            }
+
+            currentWord.value.isCollected = userWord.collection === 1
+          }
+        } catch (error) {
+          console.error('获取用户单词关联信息失败:', error)
+        }
+      }
+
       wordDetailVisible.value = true
     } else {
       ElMessage.error(response.message || '获取单词详情失败')
@@ -483,6 +548,15 @@ const loadWords = async () => {
   loading.value = true
 
   try {
+    // 获取用户ID
+    const id = userId.value
+    if (!id) {
+      console.warn('未找到用户ID，可能无法正确显示单词状态')
+      ElMessage.warning('未找到用户信息，请重新登录')
+      loading.value = false
+      return
+    }
+
     // 构建查询参数
     const params: any = {
       page: currentPage.value,
@@ -504,39 +578,68 @@ const loadWords = async () => {
       params.status = parseInt(filterForm.status)
     }
 
-    // 添加用户ID
-    const id = userId.value
-    if (id) {
-      params.userId = id
-    }
+    // 添加用户ID - 确保每次都传递用户ID以获取正确的状态
+    params.userId = id
 
     // 添加搜索关键词
     if (searchKeyword.value) {
       params.query = searchKeyword.value
     }
 
+    console.log('加载单词列表参数:', params)
     const response = await getWordList(params)
     if (response.success && response.data) {
       // 处理返回的数据
       wordsList.value = response.data.list || []
+      console.log('获取到的单词列表:', wordsList.value)
 
       // 设置总数量
       totalWords.value = response.data.total || 0
 
-      // 处理单词状态显示
-      wordsList.value.forEach(word => {
-        // 将remember和study字段映射到status字段用于显示
-        if (word.remember === 1) {
-          word.status = 2 // 已掌握
-        } else if (word.study === 1) {
-          word.status = 1 // 已学习
-        } else {
-          word.status = 0 // 未学习
-        }
+      // 获取用户单词关联信息
+      try {
+        const userWordsResponse = await getUserWords(id)
+        if (userWordsResponse.success && userWordsResponse.data) {
+          // 创建一个映射，用于快速查找用户单词状态
+          const userWordMap = {}
+          userWordsResponse.data.forEach(userWord => {
+            userWordMap[userWord.wordId] = userWord
+          })
 
-        // 将collection字段映射到isCollected字段用于显示
-        word.isCollected = word.collection === 1
-      })
+          // 更新单词列表中的状态
+          wordsList.value.forEach(word => {
+            const userWord = userWordMap[word.wordId]
+            if (userWord) {
+              // 使用用户单词关联中的状态
+              word.remember = userWord.remember
+              word.study = userWord.study
+              word.collection = userWord.collection
+            }
+
+            // 将remember和study字段映射到status字段用于显示
+            if (word.remember === 1) {
+              word.status = 2 // 已掌握
+            } else if (word.study === 1) {
+              word.status = 1 // 已学习
+            } else {
+              word.status = 0 // 未学习
+            }
+
+            // 将collection字段映射到isCollected字段用于显示
+            word.isCollected = word.collection === 1
+
+            console.log(`单词 ${word.wordName} 状态:`, {
+              remember: word.remember,
+              study: word.study,
+              collection: word.collection,
+              status: word.status,
+              isCollected: word.isCollected
+            })
+          })
+        }
+      } catch (error) {
+        console.error('获取用户单词关联信息失败:', error)
+      }
     } else {
       ElMessage.error(response.message || '获取单词列表失败')
     }
