@@ -53,10 +53,11 @@
         <template #title>公告管理</template>
       </el-menu-item>
 
-      <el-menu-item index="/admin/statistics">
+      <!-- 数据统计功能暂未实现，暂时注释掉 -->
+      <!-- <el-menu-item index="/admin/statistics">
         <el-icon><DataAnalysis /></el-icon>
         <template #title>数据统计</template>
-      </el-menu-item>
+      </el-menu-item> -->
     </el-menu>
   </div>
 </template>

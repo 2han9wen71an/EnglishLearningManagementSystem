@@ -177,12 +177,12 @@ const router = createRouter({
           meta: { title: '公告管理', requiresAuth: true, requiresAdmin: true }
         },
         // 数据统计
-        {
+        /*{
           path: 'statistics',
           name: 'AdminStatistics',
           component: () => import('@/views/admin/statistics/StatisticsView.vue'),
           meta: { title: '数据统计', requiresAuth: true, requiresAdmin: true }
-        },
+        },*/
         // 个人资料
         {
           path: 'profile',
