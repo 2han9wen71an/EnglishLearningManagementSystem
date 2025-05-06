@@ -7,7 +7,7 @@ import 'nprogress/nprogress.css'
 // 创建axios实例
 const service = axios.create({
   baseURL: '/api', // API的基础URL，使用相对路径，将由Vite代理转发
-  timeout: 15000 // 请求超时时间
+  timeout: 60000 // 请求超时时间，增加到60秒以适应LLM处理时间
 })
 
 // 请求拦截器

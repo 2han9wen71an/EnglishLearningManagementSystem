@@ -61,11 +61,17 @@
                     :src="currentCard.imageUrl"
                     fit="cover"
                     :preview-src-list="[currentCard.imageUrl]"
+                    :initial-index="0"
+                    referrerpolicy="no-referrer"
+                    @error="handleImageError"
                   >
                     <template #error>
                       <div class="image-error">
                         <el-icon><Picture /></el-icon>
                         <span>图片加载失败</span>
+                        <el-button size="small" type="primary" @click="tryLoadImageAgain" style="margin-top: 10px;">
+                          重试加载
+                        </el-button>
                       </div>
                     </template>
                   </el-image>
@@ -90,7 +96,11 @@
               </div>
 
               <div class="card-actions">
-                <el-button type="primary" @click="saveToCollection">收藏卡片</el-button>
+                <el-tooltip content="功能开发中，敬请期待" placement="top">
+                  <el-button type="primary" @click="saveToCollection">
+                    收藏卡片
+                  </el-button>
+                </el-tooltip>
                 <el-button @click="shareCard">分享卡片</el-button>
                 <el-button @click="printCard">打印卡片</el-button>
               </div>
@@ -146,7 +156,7 @@
     <el-dialog v-model="shareDialogVisible" title="分享单词卡片" width="400px">
       <div class="share-dialog-content">
         <div class="qrcode-container">
-          <div ref="qrcodeRef" class="qrcode"></div>
+          <canvas ref="qrcodeRef" class="qrcode"></canvas>
         </div>
         <p class="share-tip">扫描二维码或复制以下链接分享</p>
         <el-input v-model="shareUrl" readonly>
@@ -161,11 +171,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Picture, Document } from '@element-plus/icons-vue'
-import request from '@/utils/request'
 import QRCode from 'qrcode'
 import { getUserId } from '@/utils/auth'
+import { generateWordCard as apiGenerateWordCard, getUserWordCards } from '@/api/wordcard'
+// 暂时注释掉未实现的API导入
+// import { collectWordByName } from '@/api/wordcard'
 
 // 数据
 const wordFormRef = ref()
@@ -186,7 +198,7 @@ const loadingHistory = ref(false)
 const cardHistory = ref<any[]>([])
 const shareDialogVisible = ref(false)
 const shareUrl = ref('')
-const qrcodeRef = ref<HTMLElement | null>(null)
+const qrcodeRef = ref<HTMLCanvasElement | null>(null)
 
 // 方法
 const generateWordCard = async () => {
@@ -197,29 +209,62 @@ const generateWordCard = async () => {
       generating.value = true
 
       try {
-        const response = await request({
-          url: '/wordcards/generate',
-          method: 'post',
-          data: {
-            word: wordForm.word,
-            userId: getUserId()
-          }
+        const userId = getUserId()
+
+        // 显示提示消息，告知用户AI生成可能需要较长时间
+        ElMessage({
+          message: 'AI正在生成单词卡片，这可能需要30-60秒，请耐心等待...',
+          type: 'info',
+          duration: 10000
         })
 
-        if (response.success) {
-          currentCard.value = response.data
-          ElMessage.success('单词卡片生成成功')
+        const response = await apiGenerateWordCard({
+          word: wordForm.word,
+          userId: userId ? Number(userId) : undefined
+        })
 
-          // 如果正在显示历史，刷新历史列表
-          if (showHistory.value) {
-            fetchCardHistory()
-          }
-        } else {
-          ElMessage.error(response.data.message || '生成单词卡片失败')
+        // response是经过request.ts中的拦截器处理后的数据
+        // 已经提取了原始响应中的data字段，并检查了success字段
+        currentCard.value = response.data
+        ElMessage.success('单词卡片生成成功')
+
+        // 如果正在显示历史，刷新历史列表
+        if (showHistory.value) {
+          fetchCardHistory()
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('生成单词卡片失败:', error)
-        ElMessage.error('生成单词卡片失败，请稍后重试')
+
+        // 提供更详细的错误信息
+        let errorMessage = '生成单词卡片失败'
+
+        if (error.message && error.message.includes('timeout')) {
+          errorMessage = '生成单词卡片超时，AI处理时间较长，请稍后重试或使用更简单的单词'
+        } else if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = `生成失败: ${error.response.data.message}`
+        } else if (error.message) {
+          errorMessage = `生成失败: ${error.message}`
+        }
+
+        ElMessage.error(errorMessage)
+
+        // 如果是超时错误，提供重试选项
+        if (error.message && error.message.includes('timeout')) {
+          ElMessageBox.confirm(
+            '生成单词卡片需要较长时间，是否重试？',
+            '请求超时',
+            {
+              confirmButtonText: '重试',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }
+          ).then(() => {
+            // 用户点击重试
+            generateWordCard()
+          }).catch(() => {
+            // 用户取消重试
+          })
+        }
       } finally {
         generating.value = false
       }
@@ -241,10 +286,14 @@ const fetchCardHistory = async () => {
   loadingHistory.value = true
 
   try {
-    const response = await request({
-      url: `/wordcards/user/${getUserId()}`,
-      method: 'get'
-    })
+    const userId = getUserId()
+    if (!userId) {
+      ElMessage.warning('请先登录')
+      loadingHistory.value = false
+      return
+    }
+
+    const response = await getUserWordCards(Number(userId))
     cardHistory.value = response.data || []
   } catch (error) {
     console.error('获取单词卡片历史失败:', error)
@@ -258,10 +307,43 @@ const selectCard = (card: any) => {
   currentCard.value = card
 }
 
+// 暂时注释掉收藏功能，等待后端接口实现
 const saveToCollection = () => {
   if (!currentCard.value) return
 
-  ElMessage.success(`已将 ${currentCard.value.word} 添加到收藏`)
+  // 显示提示消息，告知用户功能暂未实现
+  ElMessage({
+    message: `收藏功能暂未实现，后端接口开发中...`,
+    type: 'info'
+  })
+
+  // 以下是原始实现，等待后端接口准备好后可以取消注释
+  /*
+  const userId = getUserId()
+  if (!userId) {
+    ElMessage.warning('请先登录后再收藏单词')
+    return
+  }
+
+  try {
+    // 调用API收藏单词
+    const response = await collectWordByName(currentCard.value.word, Number(userId))
+
+    // response已经经过request.ts中的拦截器处理
+    ElMessage.success(response.data?.message || `已将 ${currentCard.value.word} 添加到收藏`)
+  } catch (error: any) {
+    console.error('收藏单词失败:', error)
+    let errorMessage = '收藏单词失败'
+
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+
+    ElMessage.error(errorMessage)
+  }
+  */
 }
 
 const shareCard = async () => {
@@ -275,6 +357,10 @@ const shareCard = async () => {
   await nextTick()
   if (qrcodeRef.value) {
     try {
+      // 确保DOM元素已经渲染
+      await nextTick()
+
+      // 使用toCanvas方法生成二维码
       await QRCode.toCanvas(qrcodeRef.value, shareUrl.value, {
         width: 200,
         margin: 2,
@@ -285,6 +371,34 @@ const shareCard = async () => {
       })
     } catch (error) {
       console.error('生成二维码失败:', error)
+
+      // 如果canvas方法失败，尝试使用toDataURL方法
+      try {
+        const dataUrl = await QRCode.toDataURL(shareUrl.value, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#409EFF',
+            light: '#FFFFFF'
+          }
+        })
+
+        // 创建图片元素显示二维码
+        const img = document.createElement('img')
+        img.src = dataUrl
+        img.style.width = '100%'
+        img.style.height = '100%'
+
+        // 清空容器并添加图片
+        const container = qrcodeRef.value.parentNode
+        if (container && container instanceof HTMLElement) {
+          container.innerHTML = ''
+          container.appendChild(img)
+        }
+      } catch (err) {
+        console.error('备用二维码生成方法也失败:', err)
+        ElMessage.error('生成二维码失败，请手动复制链接分享')
+      }
     }
   }
 }
@@ -428,6 +542,34 @@ const formatDate = (dateString: string) => {
   if (!dateString) return ''
   const date = new Date(dateString)
   return date.toLocaleString()
+}
+
+// 处理图片加载错误
+const handleImageError = () => {
+  console.warn('图片加载失败:', currentCard.value?.imageUrl)
+  // 可以在这里设置一个默认图片
+  if (currentCard.value) {
+    // 记录原始URL以便重试
+    currentCard.value._originalImageUrl = currentCard.value.imageUrl
+
+    // 设置为默认图片（使用一个公共的图片服务）
+    currentCard.value.imageUrl = `https://dummyimage.com/400x400/f0f0f0/333333.png&text=${encodeURIComponent(currentCard.value.word)}`
+  }
+}
+
+// 尝试重新加载图片
+const tryLoadImageAgain = () => {
+  if (currentCard.value && currentCard.value._originalImageUrl) {
+    // 恢复原始URL
+    currentCard.value.imageUrl = currentCard.value._originalImageUrl
+
+    // 添加时间戳参数以避免缓存
+    if (!currentCard.value.imageUrl.includes('?')) {
+      currentCard.value.imageUrl += `?t=${Date.now()}`
+    } else {
+      currentCard.value.imageUrl += `&t=${Date.now()}`
+    }
+  }
 }
 
 // 生命周期钩子

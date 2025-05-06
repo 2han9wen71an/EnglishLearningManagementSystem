@@ -10,5 +10,6 @@ export * from './listening'
 export * from './reading'
 export * from './statistics'
 export * from './dashboard'
+export * from './wordcard'
 
 // 可以在这里添加更多API模块的导出
