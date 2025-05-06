@@ -1,4 +1,4 @@
-package com.chun.myspringboot.service.impl;
+package com.chun.myspringboot.service.Impl;
 
 import com.chun.myspringboot.mapper.UserActivityMapper;
 import com.chun.myspringboot.pojo.UserActivity;

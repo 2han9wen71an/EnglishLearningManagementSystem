@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import {
   User,
   Reading,
@@ -83,6 +84,7 @@ import {
   Headset,
   Document
 } from '@element-plus/icons-vue'
+import { getSystemStatistics } from '@/api/statistics'
 
 // 权限列表
 const permissions = [
@@ -104,15 +106,39 @@ const statCards = ref([
 ])
 
 // 获取统计数据
-onMounted(async () => {
-  // 这里应该从API获取实际数据
-  // 暂时使用模拟数据
-  statCards.value = [
-    { label: '用户总数', value: 128, icon: 'User', color: '#409EFF' },
-    { label: '单词总数', value: 5642, icon: 'Reading', color: '#67C23A' },
-    { label: '考试总数', value: 24, icon: 'DocumentChecked', color: '#E6A23C' },
-    { label: '公告总数', value: 15, icon: 'Bell', color: '#F56C6C' }
-  ]
+const fetchStatisticsData = async () => {
+  try {
+    const response = await getSystemStatistics()
+    if (response.success) {
+      const data = response.data
+
+      // 更新统计卡片数据
+      statCards.value = [
+        { label: '用户总数', value: data.userCount || 0, icon: 'User', color: '#409EFF' },
+        { label: '单词总数', value: data.wordCount || 0, icon: 'Reading', color: '#67C23A' },
+        { label: '考试总数', value: data.examCount || 0, icon: 'DocumentChecked', color: '#E6A23C' },
+        { label: '公告总数', value: data.noticeCount || 0, icon: 'Bell', color: '#F56C6C' }
+      ]
+    } else {
+      ElMessage.error(response.message || '获取统计数据失败')
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败，请稍后重试')
+
+    // 使用默认数据
+    statCards.value = [
+      { label: '用户总数', value: 0, icon: 'User', color: '#409EFF' },
+      { label: '单词总数', value: 0, icon: 'Reading', color: '#67C23A' },
+      { label: '考试总数', value: 0, icon: 'DocumentChecked', color: '#E6A23C' },
+      { label: '公告总数', value: 0, icon: 'Bell', color: '#F56C6C' }
+    ]
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchStatisticsData()
 })
 </script>
 

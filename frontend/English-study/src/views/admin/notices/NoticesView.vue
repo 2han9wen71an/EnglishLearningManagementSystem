@@ -137,6 +137,7 @@ import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getNoticeList, getNoticeDetail, addNotice, updateNotice, deleteNotice } from '@/api/notice'
 
 // 引入富文本编辑器
 let editor: any = null
@@ -199,58 +200,87 @@ const initEditor = () => {
   }, 100)
 }
 
+// 原始公告列表数据（未筛选）
+const originalNoticeList = ref([])
+
 // 获取公告列表
 const fetchNoticeList = () => {
   loading.value = true
-  // 这里应该调用API获取公告列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockNotices = [
-      { noticeId: 1, title: '欢迎使用英语学习管理系统', content: '<p>欢迎使用英语学习管理系统！本系统提供单词学习、听力练习和阅读材料等功能，帮助您提高英语水平。</p><p>如有任何问题，请联系管理员。</p>', creatTime: '2023-05-01' },
-      { noticeId: 2, title: '系统更新通知', content: '<p>尊敬的用户：</p><p>我们将于2023年5月10日凌晨2:00-4:00进行系统维护，期间系统可能无法正常访问。给您带来的不便，敬请谅解。</p>', creatTime: '2023-05-02' },
-      { noticeId: 3, title: '新功能上线通知', content: '<p>我们新增了以下功能：</p><ol><li>单词发音功能</li><li>学习进度统计</li><li>个性化学习计划</li></ol><p>欢迎体验！</p>', creatTime: '2023-05-03' }
-    ]
 
-    // 根据搜索条件过滤
-    let filteredNotices = [...mockNotices]
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredNotices = filteredNotices.filter(notice =>
-        notice.title.toLowerCase().includes(query)
-      )
-    }
+  // 调用API获取公告列表（不带筛选参数）
+  getNoticeList({})
+    .then(res => {
+      if (res.success) {
+        // 保存原始数据
+        originalNoticeList.value = res.data || []
+        // 应用本地筛选
+        applyLocalFilters()
+      } else {
+        ElMessage.error(res.message || '获取公告列表失败')
+        originalNoticeList.value = []
+        noticeList.value = []
+        total.value = 0
+      }
+    })
+    .catch(err => {
+      console.error('获取公告列表出错:', err)
+      ElMessage.error('获取公告列表失败，请稍后重试')
+      originalNoticeList.value = []
+      noticeList.value = []
+      total.value = 0
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
 
-    // 根据日期范围过滤
-    if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
-      const startDate = new Date(dateRange.value[0]).getTime()
-      const endDate = new Date(dateRange.value[1]).getTime()
-      filteredNotices = filteredNotices.filter(notice => {
-        const noticeDate = new Date(notice.creatTime).getTime()
-        return noticeDate >= startDate && noticeDate <= endDate
-      })
-    }
+// 在前端应用筛选
+const applyLocalFilters = () => {
+  // 从原始数据开始筛选
+  let filteredData = [...originalNoticeList.value]
 
-    total.value = filteredNotices.length
-    noticeList.value = filteredNotices
-    loading.value = false
-  }, 500)
+  // 应用搜索关键词筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filteredData = filteredData.filter(item =>
+      (item.title && item.title.toLowerCase().includes(query))
+    )
+  }
+
+  // 根据日期范围过滤
+  if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+    const startDate = new Date(dateRange.value[0]).getTime()
+    const endDate = new Date(dateRange.value[1]).getTime()
+    filteredData = filteredData.filter(notice => {
+      const noticeDate = new Date(notice.creatTime).getTime()
+      return noticeDate >= startDate && noticeDate <= endDate
+    })
+  }
+
+  // 计算总数
+  total.value = filteredData.length
+
+  // 应用分页
+  const startIndex = (currentPage.value - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  noticeList.value = filteredData.slice(startIndex, endIndex)
 }
 
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
-  fetchNoticeList()
+  applyLocalFilters()
 }
 
 // 分页相关
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  fetchNoticeList()
+  applyLocalFilters()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  fetchNoticeList()
+  applyLocalFilters()
 }
 
 // 添加公告
@@ -297,10 +327,20 @@ const handleDeleteNotice = (row: any) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    // 这里应该调用API删除公告
-    ElMessage.success('删除成功')
-    fetchNoticeList()
+  ).then(async () => {
+    try {
+      // 调用API删除公告
+      const result = await deleteNotice(row.noticeId)
+      if (result.success) {
+        ElMessage.success('删除成功')
+        fetchNoticeList() // 重新获取完整列表
+      } else {
+        ElMessage.error(result.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除公告失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
   }).catch(() => {
     // 取消删除
   })
@@ -310,24 +350,49 @@ const handleDeleteNotice = (row: any) => {
 const submitNoticeForm = async () => {
   if (!noticeFormRef.value) return
 
-  await noticeFormRef.value.validate((valid, fields) => {
+  await noticeFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 获取编辑器内容
-      const textarea = document.querySelector('#editor textarea') as HTMLTextAreaElement
-      if (textarea) {
-        noticeForm.content = textarea.value
-      }
+      try {
+        // 获取编辑器内容
+        const textarea = document.querySelector('#editor textarea') as HTMLTextAreaElement
+        if (textarea) {
+          noticeForm.content = textarea.value
+        }
 
-      // 这里应该调用API添加或更新公告
-      if (dialogType.value === 'add') {
-        // 添加公告
-        ElMessage.success('添加成功')
-      } else {
-        // 更新公告
-        ElMessage.success('更新成功')
+        // 准备提交的数据
+        const submitData = {
+          noticeId: noticeForm.noticeId,
+          title: noticeForm.title,
+          content: noticeForm.content,
+          creatTime: new Date()
+        }
+
+        let result
+        if (dialogType.value === 'add') {
+          // 添加公告
+          result = await addNotice(submitData)
+          if (result.success) {
+            ElMessage.success('添加成功')
+            dialogVisible.value = false
+            fetchNoticeList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '添加失败')
+          }
+        } else {
+          // 更新公告
+          result = await updateNotice(noticeForm.noticeId, submitData)
+          if (result.success) {
+            ElMessage.success('更新成功')
+            dialogVisible.value = false
+            fetchNoticeList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '更新失败')
+          }
+        }
+      } catch (error) {
+        console.error('提交公告表单失败:', error)
+        ElMessage.error('操作失败，请稍后重试')
       }
-      dialogVisible.value = false
-      fetchNoticeList()
     } else {
       console.log('表单验证失败', fields)
     }

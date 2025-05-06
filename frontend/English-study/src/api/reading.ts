@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 获取阅读列表
 export function getReadingList(params: { level?: string; page?: number; size?: number; query?: string }) {
   return request({
-    url: '/reading',
+    url: '/books',
     method: 'get',
     params
   })
@@ -12,7 +12,7 @@ export function getReadingList(params: { level?: string; page?: number; size?: n
 // 获取阅读详情
 export function getReadingDetail(id: number) {
   return request({
-    url: `/reading/${id}`,
+    url: `/books/${id}`,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getReadingDetail(id: number) {
 // 添加阅读（管理员）
 export function addReading(data: any) {
   return request({
-    url: '/admin/reading',
+    url: '/books',
     method: 'post',
     data
   })
@@ -29,7 +29,7 @@ export function addReading(data: any) {
 // 更新阅读（管理员）
 export function updateReading(id: number, data: any) {
   return request({
-    url: `/admin/reading/${id}`,
+    url: `/books/${id}`,
     method: 'put',
     data
   })
@@ -38,7 +38,7 @@ export function updateReading(id: number, data: any) {
 // 删除阅读（管理员）
 export function deleteReading(id: number) {
   return request({
-    url: `/admin/reading/${id}`,
+    url: `/books/${id}`,
     method: 'delete'
   })
 }

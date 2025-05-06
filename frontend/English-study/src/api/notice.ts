@@ -28,7 +28,7 @@ export function getLatestNotice() {
 // 添加公告（管理员）
 export function addNotice(data: any) {
   return request({
-    url: '/admin/notices',
+    url: '/notices',
     method: 'post',
     data
   })
@@ -37,7 +37,7 @@ export function addNotice(data: any) {
 // 更新公告（管理员）
 export function updateNotice(noticeId: number, data: any) {
   return request({
-    url: `/admin/notices/${noticeId}`,
+    url: `/notices/${noticeId}`,
     method: 'put',
     data
   })
@@ -46,7 +46,7 @@ export function updateNotice(noticeId: number, data: any) {
 // 删除公告（管理员）
 export function deleteNotice(noticeId: number) {
   return request({
-    url: `/admin/notices/${noticeId}`,
+    url: `/notices/${noticeId}`,
     method: 'delete'
   })
 }

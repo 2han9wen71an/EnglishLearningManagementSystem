@@ -2,7 +2,9 @@ package com.chun.myspringboot.service;
 
 import com.chun.myspringboot.pojo.User;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
     //根据Id查询用户
@@ -24,5 +26,12 @@ public interface UserService {
     //查询用户
     List<User> queryAllUser();
 
+    //获取用户总数
+    int queryAllUserCount();
 
+    //获取用户增长趋势
+    Map<String, Integer> getUserGrowthTrend(Date startDate, Date endDate);
+
+    //获取系统活跃度统计
+    Map<String, Map<String, Integer>> getSystemActivityStats(Date startDate, Date endDate);
 }

@@ -23,7 +23,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        
+
         <el-select v-model="roleFilter" placeholder="角色筛选" clearable @change="handleSearch">
           <el-option
             v-for="item in roleOptions"
@@ -32,7 +32,7 @@
             :value="item.value"
           />
         </el-select>
-        
+
         <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
 
@@ -63,16 +63,16 @@
         </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="scope">
-            <el-button 
-              size="small" 
-              type="primary" 
+            <el-button
+              size="small"
+              type="primary"
               @click="handleEditUser(scope.row)"
             >
               编辑
             </el-button>
-            <el-button 
-              size="small" 
-              type="danger" 
+            <el-button
+              size="small"
+              type="danger"
               @click="handleDeleteUser(scope.row)"
             >
               删除
@@ -144,6 +144,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getUserList, addUser, updateUser, deleteUser } from '@/api/user'
 
 // 用户列表数据
 const userList = ref([])
@@ -196,36 +197,51 @@ const userFormRules = reactive<FormRules>({
 })
 
 // 获取用户列表
-const fetchUserList = () => {
+const fetchUserList = async () => {
   loading.value = true
-  // 这里应该调用API获取用户列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockUsers = [
-      { userId: 1, userName: 'admin', email: 'admin@example.com', role: 1, activeStatus: 1 },
-      { userId: 2, userName: 'user1', email: 'user1@example.com', role: 0, activeStatus: 1 },
-      { userId: 3, userName: 'user2', email: 'user2@example.com', role: 0, activeStatus: 1 },
-      { userId: 4, userName: 'user3', email: 'user3@example.com', role: 0, activeStatus: 0 }
-    ]
-    
-    // 根据搜索条件过滤
-    let filteredUsers = [...mockUsers]
+  try {
+    // 构建查询参数
+    const params: any = {
+      page: currentPage.value,
+      size: pageSize.value
+    }
+
+    // 添加搜索条件
     if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredUsers = filteredUsers.filter(user => 
-        user.userName.toLowerCase().includes(query) || 
-        user.email.toLowerCase().includes(query)
-      )
+      params.query = searchQuery.value
     }
-    
+
+    // 添加角色筛选
     if (roleFilter.value !== '') {
-      filteredUsers = filteredUsers.filter(user => user.role === roleFilter.value)
+      params.role = roleFilter.value
     }
-    
-    total.value = filteredUsers.length
-    userList.value = filteredUsers
+
+    // 调用API获取用户列表
+    const response = await getUserList(params)
+
+    if (response.success) {
+      // 更新用户列表和总数
+      if (response.data && Array.isArray(response.data.data)) {
+        userList.value = response.data.data || []
+        total.value = response.data.total || userList.value.length
+      } else {
+        // 兼容旧格式
+        userList.value = response.data || []
+        total.value = response.total || userList.value.length
+      }
+    } else {
+      ElMessage.error(response.message || '获取用户列表失败')
+      userList.value = []
+      total.value = 0
+    }
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    ElMessage.error('获取用户列表失败，请稍后重试')
+    userList.value = []
+    total.value = 0
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 搜索
@@ -279,10 +295,20 @@ const handleDeleteUser = (row: any) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    // 这里应该调用API删除用户
-    ElMessage.success('删除成功')
-    fetchUserList()
+  ).then(async () => {
+    try {
+      // 调用API删除用户
+      const response = await deleteUser(row.userId)
+      if (response.success) {
+        ElMessage.success('删除用户成功')
+        fetchUserList()
+      } else {
+        ElMessage.error(response.message || '删除用户失败')
+      }
+    } catch (error) {
+      console.error('删除用户失败:', error)
+      ElMessage.error('删除用户失败，请稍后重试')
+    }
   }).catch(() => {
     // 取消删除
   })
@@ -291,19 +317,35 @@ const handleDeleteUser = (row: any) => {
 // 提交用户表单
 const submitUserForm = async () => {
   if (!userFormRef.value) return
-  
-  await userFormRef.value.validate((valid, fields) => {
+
+  await userFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 这里应该调用API添加或更新用户
-      if (dialogType.value === 'add') {
-        // 添加用户
-        ElMessage.success('添加成功')
-      } else {
-        // 更新用户
-        ElMessage.success('更新成功')
+      try {
+        if (dialogType.value === 'add') {
+          // 添加用户
+          const response = await addUser(userForm)
+          if (response.success) {
+            ElMessage.success('添加用户成功')
+            dialogVisible.value = false
+            fetchUserList()
+          } else {
+            ElMessage.error(response.message || '添加用户失败')
+          }
+        } else {
+          // 更新用户
+          const response = await updateUser(userForm.userId, userForm)
+          if (response.success) {
+            ElMessage.success('更新用户成功')
+            dialogVisible.value = false
+            fetchUserList()
+          } else {
+            ElMessage.error(response.message || '更新用户失败')
+          }
+        }
+      } catch (error) {
+        console.error('操作失败:', error)
+        ElMessage.error('操作失败，请稍后重试')
       }
-      dialogVisible.value = false
-      fetchUserList()
     } else {
       console.log('表单验证失败', fields)
     }

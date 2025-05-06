@@ -73,6 +73,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import {
   User,
   Reading,
@@ -86,6 +87,12 @@ import {
   Document,
   DataAnalysis
 } from '@element-plus/icons-vue'
+import {
+  getSystemStatistics,
+  getUserGrowthTrend,
+  getExamCompletionStats,
+  getSystemActivityStats
+} from '@/api/statistics'
 
 // 统计卡片数据
 const statCards = ref([
@@ -101,43 +108,107 @@ const examCompletionChart = ref(null)
 const systemActivityChart = ref(null)
 
 // 获取统计数据
-const fetchStatisticsData = () => {
-  // 这里应该调用API获取统计数据
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    statCards.value = [
-      { label: '用户总数', value: 128, icon: 'User', color: '#409EFF' },
-      { label: '单词总数', value: 5642, icon: 'Reading', color: '#67C23A' },
-      { label: '考试总数', value: 24, icon: 'DocumentChecked', color: '#E6A23C' },
-      { label: '公告总数', value: 15, icon: 'Bell', color: '#F56C6C' }
-    ]
-    
+const fetchStatisticsData = async () => {
+  try {
+    // 获取系统统计数据
+    const response = await getSystemStatistics()
+    if (response.success) {
+      const data = response.data
+
+      // 更新统计卡片数据
+      statCards.value = [
+        { label: '用户总数', value: data.userCount || 0, icon: 'User', color: '#409EFF' },
+        { label: '单词总数', value: data.wordCount || 0, icon: 'Reading', color: '#67C23A' },
+        { label: '考试总数', value: data.examCount || 0, icon: 'DocumentChecked', color: '#E6A23C' },
+        { label: '公告总数', value: data.noticeCount || 0, icon: 'Bell', color: '#F56C6C' }
+      ]
+    } else {
+      ElMessage.error(response.message || '获取统计数据失败')
+    }
+
     // 初始化图表
+    await fetchChartData()
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败，请稍后重试')
+
+    // 使用默认数据
+    statCards.value = [
+      { label: '用户总数', value: 0, icon: 'User', color: '#409EFF' },
+      { label: '单词总数', value: 0, icon: 'Reading', color: '#67C23A' },
+      { label: '考试总数', value: 0, icon: 'DocumentChecked', color: '#E6A23C' },
+      { label: '公告总数', value: 0, icon: 'Bell', color: '#F56C6C' }
+    ]
+
+    // 初始化图表（使用默认数据）
     initCharts()
-  }, 500)
+  }
+}
+
+// 获取图表数据
+const fetchChartData = async () => {
+  try {
+    // 获取用户增长趋势数据
+    const userGrowthResponse = await getUserGrowthTrend()
+
+    // 获取考试完成情况数据
+    const examCompletionResponse = await getExamCompletionStats()
+
+    // 获取系统活跃度数据
+    const systemActivityResponse = await getSystemActivityStats()
+
+    // 初始化图表
+    initCharts(
+      userGrowthResponse.success ? userGrowthResponse.data : null,
+      examCompletionResponse.success ? examCompletionResponse.data : null,
+      systemActivityResponse.success ? systemActivityResponse.data : null
+    )
+  } catch (error) {
+    console.error('获取图表数据失败:', error)
+    // 使用默认数据初始化图表
+    initCharts()
+  }
 }
 
 // 初始化图表
-const initCharts = () => {
+const initCharts = (userGrowthData = null, examCompletionData = null, systemActivityData = null) => {
   // 这里应该引入并初始化图表库，如 ECharts, Chart.js 等
   // 示例代码，实际使用时需要替换为真实的图表初始化代码
-  
+
   // 用户增长趋势图表
   if (userGrowthChart.value) {
     const chartElement = userGrowthChart.value as HTMLElement
-    chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #909399;">用户增长趋势图表（需要集成图表库）</div>'
+    if (userGrowthData) {
+      // 使用实际数据初始化图表
+      chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #409EFF;">用户增长趋势图表（已获取实际数据）</div>'
+    } else {
+      // 使用默认提示
+      chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #909399;">用户增长趋势图表（需要集成图表库）</div>'
+    }
   }
-  
+
   // 考试完成情况图表
   if (examCompletionChart.value) {
     const chartElement = examCompletionChart.value as HTMLElement
-    chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #909399;">考试完成情况图表（需要集成图表库）</div>'
+    if (examCompletionData) {
+      // 使用实际数据初始化图表
+      chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #67C23A;">考试完成情况图表（已获取实际数据）</div>'
+    } else {
+      // 使用默认提示
+      chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #909399;">考试完成情况图表（需要集成图表库）</div>'
+    }
   }
-  
+
   // 系统活跃度图表
   if (systemActivityChart.value) {
     const chartElement = systemActivityChart.value as HTMLElement
-    chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #909399;">系统活跃度图表（需要集成图表库）</div>'
+    if (systemActivityData) {
+      // 使用实际数据初始化图表
+      chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #E6A23C;">系统活跃度图表（已获取实际数据）</div>'
+    } else {
+      // 使用默认提示
+      chartElement.innerHTML = '<div style="height: 300px; display: flex; align-items: center; justify-content: center; color: #909399;">系统活跃度图表（需要集成图表库）</div>'
+    }
   }
 }
 

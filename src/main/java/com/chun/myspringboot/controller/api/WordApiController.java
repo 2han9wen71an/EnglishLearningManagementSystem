@@ -110,6 +110,15 @@ public class WordApiController {
     }
 
     /**
+     * 获取单词等级列表
+     */
+    @GetMapping("/grades")
+    public ResponseEntity<ApiResponse<List<Grade>>> getWordGrades() {
+        List<Grade> grades = gradeService.queryAllGrade();
+        return ResponseEntity.ok(ApiResponse.success(grades));
+    }
+
+    /**
      * 标记单词为已记住
      */
     @PostMapping("/{wordId}/remember")

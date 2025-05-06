@@ -47,7 +47,7 @@ export function updateUserInfo(userId: number, data: any) {
 // 获取用户列表（管理员）
 export function getUserList(params?: { role?: number; activeStatus?: number; page?: number; size?: number; query?: string }) {
   return request({
-    url: '/admin/users',
+    url: '/users',
     method: 'get',
     params
   })
@@ -56,7 +56,7 @@ export function getUserList(params?: { role?: number; activeStatus?: number; pag
 // 添加用户（管理员）
 export function addUser(data: any) {
   return request({
-    url: '/admin/users',
+    url: '/users',
     method: 'post',
     data
   })
@@ -65,7 +65,7 @@ export function addUser(data: any) {
 // 更新用户（管理员）
 export function updateUser(userId: number, data: any) {
   return request({
-    url: `/admin/users/${userId}`,
+    url: `/users/${userId}`,
     method: 'put',
     data
   })
@@ -74,7 +74,7 @@ export function updateUser(userId: number, data: any) {
 // 删除用户（管理员）
 export function deleteUser(userId: number) {
   return request({
-    url: `/admin/users/${userId}`,
+    url: `/users/${userId}`,
     method: 'delete'
   })
 }

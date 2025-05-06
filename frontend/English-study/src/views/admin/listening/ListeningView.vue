@@ -44,16 +44,28 @@
         style="width: 100%"
         v-loading="loading"
       >
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="标题" />
-        <el-table-column prop="level" label="等级" width="100">
+        <el-table-column prop="listenId" label="ID" width="80" />
+        <el-table-column prop="listenName" label="标题" />
+        <el-table-column prop="grade" label="等级" width="100">
           <template #default="scope">
-            <el-tag :type="getLevelTagType(scope.row.level)">
-              {{ getLevelName(scope.row.level) }}
+            <el-tag :type="getLevelTagType(getGradeCode(scope.row.grade))">
+              {{ getGradeName(scope.row.grade) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="year" label="年份" width="100" />
+        <el-table-column label="音频" width="100">
+          <template #default="scope">
+            <el-button
+              size="small"
+              type="info"
+              @click="previewAudio(scope.row)"
+              v-if="scope.row.path"
+            >
+              播放
+            </el-button>
+            <span v-else>无音频</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="250">
           <template #default="scope">
             <el-button
@@ -99,7 +111,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'add' ? '添加听力' : '编辑听力'"
-      width="600px"
+      width="700px"
     >
       <el-form
         ref="listeningFormRef"
@@ -107,11 +119,11 @@
         :rules="listeningFormRules"
         label-width="100px"
       >
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="listeningForm.title" placeholder="请输入标题" />
+        <el-form-item label="标题" prop="listenName">
+          <el-input v-model="listeningForm.listenName" placeholder="请输入标题" />
         </el-form-item>
-        <el-form-item label="等级" prop="level">
-          <el-select v-model="listeningForm.level" placeholder="请选择等级">
+        <el-form-item label="等级" prop="grade">
+          <el-select v-model="listeningForm.grade" placeholder="请选择等级">
             <el-option
               v-for="item in levelOptions"
               :key="item.value"
@@ -120,26 +132,35 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="年份" prop="year">
-          <el-input v-model="listeningForm.year" placeholder="请输入年份，如2023" />
+        <el-form-item label="听力内容" prop="content">
+          <el-input
+            v-model="listeningForm.content"
+            type="textarea"
+            :rows="5"
+            placeholder="请输入听力内容，支持HTML格式"
+          />
         </el-form-item>
-        <el-form-item label="音频文件" prop="audioUrl">
+        <el-form-item label="音频文件" prop="path">
           <el-upload
             class="upload-demo"
-            action="/api/upload/audio"
-            :on-success="handleAudioUploadSuccess"
-            :on-error="handleAudioUploadError"
-            :before-upload="beforeAudioUpload"
+            action="#"
+            :auto-upload="false"
+            :on-change="(file) => { beforeAudioUpload(file.raw) }"
+            :limit="1"
           >
             <el-button type="primary">选择文件</el-button>
             <template #tip>
               <div class="el-upload__tip">
-                请上传MP3格式音频文件，大小不超过20MB
+                请上传音频文件，大小不超过20MB
               </div>
             </template>
           </el-upload>
-          <div v-if="listeningForm.audioUrl" class="audio-preview">
-            <audio controls :src="listeningForm.audioUrl"></audio>
+          <div v-if="listeningForm.path" class="audio-preview">
+            <p>当前音频: {{ listeningForm.path }}</p>
+            <audio v-if="listeningForm.path.startsWith('/')" controls :src="`/api/files/audio/${listeningForm.path}`"></audio>
+          </div>
+          <div v-if="listeningForm.audioFile" class="audio-preview">
+            <p>已选择新文件: {{ listeningForm.audioFile.name }}</p>
           </div>
         </el-form-item>
       </el-form>
@@ -158,6 +179,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getListeningList, addListening, updateListening, deleteListening, uploadAudio } from '@/api/listening'
 
 // 听力列表数据
 const listeningList = ref([])
@@ -170,21 +192,27 @@ const levelFilter = ref('')
 
 // 等级选项
 const levelOptions = [
-  { value: 'cet4', label: '四级' },
-  { value: 'cet6', label: '六级' },
-  { value: 'ielts', label: '雅思' },
-  { value: 'toefl', label: '托福' }
+  { value: 1, label: '四级', code: 'cet4' },
+  { value: 2, label: '六级', code: 'cet6' },
+  { value: 3, label: '托福', code: 'toefl' },
+  { value: 4, label: '雅思', code: 'ielts' }
 ]
 
 // 获取等级名称
-const getLevelName = (levelId: string) => {
-  const level = levelOptions.find(item => item.value === levelId)
+const getGradeName = (gradeId: number) => {
+  const level = levelOptions.find(item => item.value === gradeId)
   return level ? level.label : '未知'
 }
 
+// 获取等级代码
+const getGradeCode = (gradeId: number) => {
+  const level = levelOptions.find(item => item.value === gradeId)
+  return level ? level.code : ''
+}
+
 // 获取等级标签类型
-const getLevelTagType = (levelId: string) => {
-  switch (levelId) {
+const getLevelTagType = (levelCode: string) => {
+  switch (levelCode) {
     case 'cet4': return ''
     case 'cet6': return 'success'
     case 'ielts': return 'warning'
@@ -198,122 +226,191 @@ const dialogVisible = ref(false)
 const dialogType = ref('add') // 'add' 或 'edit'
 const listeningFormRef = ref<FormInstance>()
 const listeningForm = reactive({
-  id: 0,
-  title: '',
-  level: 'cet4',
-  year: '',
-  audioUrl: ''
+  listenId: 0,
+  listenName: '',
+  grade: 1, // 默认四级
+  path: '',
+  content: '',
+  audioFile: null as File | null
 })
 
 // 表单验证规则
 const listeningFormRules = reactive<FormRules>({
-  title: [
+  listenName: [
     { required: true, message: '请输入标题', trigger: 'blur' },
     { min: 2, max: 100, message: '长度在 2 到 100 个字符', trigger: 'blur' }
   ],
-  level: [
+  grade: [
     { required: true, message: '请选择等级', trigger: 'change' }
   ],
-  year: [
-    { required: true, message: '请输入年份', trigger: 'blur' },
-    { pattern: /^\d{4}$/, message: '年份格式不正确', trigger: 'blur' }
+  content: [
+    { required: false, message: '请输入听力内容', trigger: 'blur' }
   ],
-  audioUrl: [
-    { required: true, message: '请上传音频文件', trigger: 'change' }
+  path: [
+    { required: false, message: '请上传音频文件', trigger: 'change' }
   ]
 })
+
+// 原始听力列表数据（未筛选）
+const originalListeningList = ref([])
 
 // 获取听力列表
 const fetchListeningList = () => {
   loading.value = true
-  // 这里应该调用API获取听力列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockListenings = [
-      { id: 1, title: '四级听力2023年6月第一套', level: 'cet4', year: '2023', audioUrl: '/audio/cet4-202306-1.mp3' },
-      { id: 2, title: '四级听力2023年6月第二套', level: 'cet4', year: '2023', audioUrl: '/audio/cet4-202306-2.mp3' },
-      { id: 3, title: '六级听力2023年6月第一套', level: 'cet6', year: '2023', audioUrl: '/audio/cet6-202306-1.mp3' },
-      { id: 4, title: '雅思听力2023年7月', level: 'ielts', year: '2023', audioUrl: '/audio/ielts-202307.mp3' }
-    ]
 
-    // 根据搜索条件过滤
-    let filteredListenings = [...mockListenings]
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredListenings = filteredListenings.filter(listening =>
-        listening.title.toLowerCase().includes(query)
-      )
-    }
+  // 调用API获取听力列表（不带筛选参数）
+  getListeningList({})
+    .then(res => {
+      if (res.success) {
+        // 保存原始数据
+        originalListeningList.value = res.data || []
+        // 应用本地筛选
+        applyLocalFilters()
+      } else {
+        ElMessage.error(res.message || '获取听力列表失败')
+        originalListeningList.value = []
+        listeningList.value = []
+        total.value = 0
+      }
+    })
+    .catch(err => {
+      console.error('获取听力列表出错:', err)
+      ElMessage.error('获取听力列表失败，请稍后重试')
+      originalListeningList.value = []
+      listeningList.value = []
+      total.value = 0
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
 
-    if (levelFilter.value !== '') {
-      filteredListenings = filteredListenings.filter(listening => listening.level === levelFilter.value)
-    }
+// 在前端应用筛选
+const applyLocalFilters = () => {
+  // 从原始数据开始筛选
+  let filteredData = [...originalListeningList.value]
 
-    total.value = filteredListenings.length
-    listeningList.value = filteredListenings
-    loading.value = false
-  }, 500)
+  // 应用等级筛选
+  if (levelFilter.value) {
+    filteredData = filteredData.filter(item => item.grade === levelFilter.value)
+  }
+
+  // 应用搜索关键词筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filteredData = filteredData.filter(item =>
+      item.listenName.toLowerCase().includes(query)
+    )
+  }
+
+  // 计算总数
+  total.value = filteredData.length
+
+  // 应用分页
+  const startIndex = (currentPage.value - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  listeningList.value = filteredData.slice(startIndex, endIndex)
 }
 
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
-  fetchListeningList()
+  applyLocalFilters()
 }
 
 // 分页相关
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  fetchListeningList()
+  applyLocalFilters()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  fetchListeningList()
+  applyLocalFilters()
 }
 
 // 添加听力
 const handleAddListening = () => {
   dialogType.value = 'add'
-  listeningForm.id = 0
-  listeningForm.title = ''
-  listeningForm.level = 'cet4'
-  listeningForm.year = new Date().getFullYear().toString()
-  listeningForm.audioUrl = ''
+  listeningForm.listenId = 0
+  listeningForm.listenName = ''
+  listeningForm.grade = 1 // 默认四级
+  listeningForm.path = ''
+  listeningForm.content = ''
+  listeningForm.audioFile = null
   dialogVisible.value = true
 }
 
 // 编辑听力
 const handleEditListening = (row: any) => {
   dialogType.value = 'edit'
-  listeningForm.id = row.id
-  listeningForm.title = row.title
-  listeningForm.level = row.level
-  listeningForm.year = row.year
-  listeningForm.audioUrl = row.audioUrl
+  listeningForm.listenId = row.listenId
+  listeningForm.listenName = row.listenName
+  listeningForm.grade = row.grade
+  listeningForm.path = row.path || ''
+  listeningForm.content = row.content || ''
+  listeningForm.audioFile = null
   dialogVisible.value = true
 }
 
 // 预览听力
 const handlePreviewListening = (row: any) => {
-  // 这里可以打开一个预览对话框或者新窗口
-  window.open(row.audioUrl, '_blank')
+  // 打开一个预览对话框，显示听力内容
+  ElMessageBox.alert(
+    `<div class="listening-preview">
+      <h3>${row.listenName}</h3>
+      <div>${row.content || '暂无内容'}</div>
+      ${row.path ? `<div class="audio-preview mt-3">
+        <audio controls src="/api/files/audio/${row.path}"></audio>
+      </div>` : ''}
+    </div>`,
+    '听力预览',
+    {
+      dangerouslyUseHTMLString: true,
+      confirmButtonText: '关闭'
+    }
+  )
+}
+
+// 预览音频
+const previewAudio = (row: any) => {
+  if (!row.path) {
+    ElMessage.warning('该听力没有音频文件')
+    return
+  }
+
+  // 创建音频元素并播放
+  const audio = new Audio(`/api/files/audio/${row.path}`)
+  audio.play().catch(err => {
+    console.error('播放音频失败:', err)
+    ElMessage.error('播放音频失败，请稍后重试')
+  })
 }
 
 // 删除听力
 const handleDeleteListening = (row: any) => {
   ElMessageBox.confirm(
-    `确定要删除听力 ${row.title} 吗？`,
+    `确定要删除听力 ${row.listenName} 吗？`,
     '警告',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    // 这里应该调用API删除听力
-    ElMessage.success('删除成功')
-    fetchListeningList()
+  ).then(async () => {
+    try {
+      // 调用API删除听力
+      const result = await deleteListening(row.listenId)
+      if (result.success) {
+        ElMessage.success('删除成功')
+        fetchListeningList() // 重新获取完整列表
+      } else {
+        ElMessage.error(result.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除听力失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
   }).catch(() => {
     // 取消删除
   })
@@ -321,43 +418,116 @@ const handleDeleteListening = (row: any) => {
 
 // 音频上传相关
 const handleAudioUploadSuccess = (response: any, file: any) => {
-  listeningForm.audioUrl = response.data.url
-  ElMessage.success('上传成功')
+  if (response.success) {
+    listeningForm.path = response.data.path || response.data.url
+    ElMessage.success('上传成功')
+  } else {
+    ElMessage.error(response.message || '上传失败')
+  }
 }
 
-const handleAudioUploadError = () => {
-  ElMessage.error('上传失败')
+const handleAudioUploadError = (err: any) => {
+  console.error('上传音频失败:', err)
+  ElMessage.error('上传失败，请稍后重试')
 }
 
 const beforeAudioUpload = (file: any) => {
-  const isMP3 = file.type === 'audio/mp3'
+  // 支持更多音频格式
+  const isAudio = file.type.startsWith('audio/')
   const isLt20M = file.size / 1024 / 1024 < 20
 
-  if (!isMP3) {
-    ElMessage.error('上传音频只能是MP3格式!')
+  if (!isAudio) {
+    ElMessage.error('请上传音频格式文件!')
   }
   if (!isLt20M) {
     ElMessage.error('上传音频大小不能超过20MB!')
   }
-  return isMP3 && isLt20M
+
+  // 保存文件对象以便后续提交
+  if (isAudio && isLt20M) {
+    listeningForm.audioFile = file
+  }
+
+  return false // 阻止自动上传，改为手动上传
+}
+
+// 手动上传音频文件
+const uploadAudioFile = async (file: File): Promise<string> => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const res = await uploadAudio(formData)
+    if (res.success) {
+      return res.data.path || res.data.url
+    } else {
+      throw new Error(res.message || '上传失败')
+    }
+  } catch (error) {
+    console.error('上传音频文件失败:', error)
+    throw error
+  }
 }
 
 // 提交听力表单
 const submitListeningForm = async () => {
   if (!listeningFormRef.value) return
 
-  await listeningFormRef.value.validate((valid, fields) => {
+  await listeningFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 这里应该调用API添加或更新听力
-      if (dialogType.value === 'add') {
-        // 添加听力
-        ElMessage.success('添加成功')
-      } else {
-        // 更新听力
-        ElMessage.success('更新成功')
+      try {
+        // 如果有新上传的音频文件，先上传文件
+        if (listeningForm.audioFile) {
+          try {
+            const formData = new FormData()
+            formData.append('file', listeningForm.audioFile)
+            const uploadResult = await uploadAudio(formData)
+            if (uploadResult.success) {
+              listeningForm.path = uploadResult.data.path || uploadResult.data.url
+            } else {
+              throw new Error(uploadResult.message || '上传音频失败')
+            }
+          } catch (error) {
+            console.error('上传音频失败:', error)
+            ElMessage.error('上传音频失败，请稍后重试')
+            return
+          }
+        }
+
+        // 准备提交的数据
+        const submitData = {
+          listenName: listeningForm.listenName,
+          grade: listeningForm.grade,
+          path: listeningForm.path,
+          content: listeningForm.content
+        }
+
+        let result
+        if (dialogType.value === 'add') {
+          // 添加听力
+          result = await addListening(submitData)
+          if (result.success) {
+            ElMessage.success('添加成功')
+            dialogVisible.value = false
+            fetchListeningList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '添加失败')
+          }
+        } else {
+          // 更新听力
+          result = await updateListening(listeningForm.listenId, submitData)
+          if (result.success) {
+            ElMessage.success('更新成功')
+            dialogVisible.value = false
+            fetchListeningList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '更新失败')
+          }
+        }
+      } catch (error) {
+        console.error('提交听力表单失败:', error)
+        ElMessage.error('操作失败，请稍后重试')
       }
-      dialogVisible.value = false
-      fetchListeningList()
     } else {
       console.log('表单验证失败', fields)
     }

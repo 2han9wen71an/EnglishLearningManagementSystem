@@ -20,7 +20,7 @@ export function getExamDetail(examId: number) {
 // 添加考试（管理员）
 export function addExam(data: any) {
   return request({
-    url: '/admin/exams',
+    url: '/exams',
     method: 'post',
     data
   })
@@ -29,7 +29,7 @@ export function addExam(data: any) {
 // 更新考试（管理员）
 export function updateExam(examId: number, data: any) {
   return request({
-    url: `/admin/exams/${examId}`,
+    url: `/exams/${examId}`,
     method: 'put',
     data
   })
@@ -38,7 +38,7 @@ export function updateExam(examId: number, data: any) {
 // 删除考试（管理员）
 export function deleteExam(examId: number) {
   return request({
-    url: `/admin/exams/${examId}`,
+    url: `/exams/${examId}`,
     method: 'delete'
   })
 }
@@ -92,7 +92,7 @@ export function getExamQuestionList(examId: number) {
 // 添加考试题目（管理员）
 export function addExamQuestion(examId: number, data: any) {
   return request({
-    url: `/admin/exams/${examId}/questions`,
+    url: `/exams/${examId}/questions`,
     method: 'post',
     data
   })
@@ -101,7 +101,7 @@ export function addExamQuestion(examId: number, data: any) {
 // 更新考试题目（管理员）
 export function updateExamQuestion(examId: number, questionId: number, data: any) {
   return request({
-    url: `/admin/exams/${examId}/questions/${questionId}`,
+    url: `/exams/${examId}/questions/${questionId}`,
     method: 'put',
     data
   })
@@ -110,7 +110,7 @@ export function updateExamQuestion(examId: number, questionId: number, data: any
 // 删除考试题目（管理员）
 export function deleteExamQuestion(examId: number, questionId: number) {
   return request({
-    url: `/admin/exams/${examId}/questions/${questionId}`,
+    url: `/exams/${examId}/questions/${questionId}`,
     method: 'delete'
   })
 }

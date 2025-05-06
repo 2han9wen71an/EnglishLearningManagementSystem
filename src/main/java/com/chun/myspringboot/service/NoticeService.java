@@ -17,4 +17,6 @@ public interface NoticeService {
     List<Notice> queryAllNotice();
     //查看最新公告的内容
     Notice queryNewNoticeById();
+    //获取公告总数
+    int queryAllNoticeCount();
 }

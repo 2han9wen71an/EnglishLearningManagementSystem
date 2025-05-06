@@ -161,6 +161,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getExamList, getExamDetail, addExam, updateExam, deleteExam } from '@/api/exam'
 
 const router = useRouter()
 
@@ -225,53 +226,83 @@ const examFormRules = reactive<FormRules>({
   ]
 })
 
+// 原始考试列表数据（未筛选）
+const originalExamList = ref([])
+
 // 获取考试列表
 const fetchExamList = () => {
   loading.value = true
-  // 这里应该调用API获取考试列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockExams = [
-      { examId: 1, title: '英语四级词汇测试', description: '测试你的英语四级词汇掌握程度', duration: 30, totalScore: 100, passScore: 60, gradeId: 1, gradeName: '四级', status: 1, createTime: '2023-06-01' },
-      { examId: 2, title: '英语六级词汇测试', description: '测试你的英语六级词汇掌握程度', duration: 30, totalScore: 100, passScore: 60, gradeId: 2, gradeName: '六级', status: 1, createTime: '2023-06-01' },
-      { examId: 3, title: '雅思词汇测试', description: '测试你的雅思词汇掌握程度', duration: 45, totalScore: 150, passScore: 90, gradeId: 3, gradeName: '雅思', status: 0, createTime: '2023-07-01' }
-    ]
 
-    // 根据搜索条件过滤
-    let filteredExams = [...mockExams]
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredExams = filteredExams.filter(exam =>
-        exam.title.toLowerCase().includes(query) ||
-        exam.description.toLowerCase().includes(query)
-      )
-    }
+  // 调用API获取考试列表（不带筛选参数）
+  getExamList({})
+    .then(res => {
+      if (res.success) {
+        // 保存原始数据
+        originalExamList.value = res.data || []
+        // 应用本地筛选
+        applyLocalFilters()
+      } else {
+        ElMessage.error(res.message || '获取考试列表失败')
+        originalExamList.value = []
+        examList.value = []
+        total.value = 0
+      }
+    })
+    .catch(err => {
+      console.error('获取考试列表出错:', err)
+      ElMessage.error('获取考试列表失败，请稍后重试')
+      originalExamList.value = []
+      examList.value = []
+      total.value = 0
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
 
-    if (statusFilter.value !== '') {
-      filteredExams = filteredExams.filter(exam => exam.status === statusFilter.value)
-    }
+// 在前端应用筛选
+const applyLocalFilters = () => {
+  // 从原始数据开始筛选
+  let filteredData = [...originalExamList.value]
 
-    total.value = filteredExams.length
-    examList.value = filteredExams
-    loading.value = false
-  }, 500)
+  // 应用状态筛选
+  if (statusFilter.value !== '') {
+    filteredData = filteredData.filter(item => item.status === statusFilter.value)
+  }
+
+  // 应用搜索关键词筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filteredData = filteredData.filter(item =>
+      (item.title && item.title.toLowerCase().includes(query)) ||
+      (item.description && item.description.toLowerCase().includes(query))
+    )
+  }
+
+  // 计算总数
+  total.value = filteredData.length
+
+  // 应用分页
+  const startIndex = (currentPage.value - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  examList.value = filteredData.slice(startIndex, endIndex)
 }
 
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
-  fetchExamList()
+  applyLocalFilters()
 }
 
 // 分页相关
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  fetchExamList()
+  applyLocalFilters()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  fetchExamList()
+  applyLocalFilters()
 }
 
 // 添加考试
@@ -317,10 +348,20 @@ const handleDeleteExam = (row: any) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    // 这里应该调用API删除考试
-    ElMessage.success('删除成功')
-    fetchExamList()
+  ).then(async () => {
+    try {
+      // 调用API删除考试
+      const result = await deleteExam(row.examId)
+      if (result.success) {
+        ElMessage.success('删除成功')
+        fetchExamList() // 重新获取完整列表
+      } else {
+        ElMessage.error(result.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除考试失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
   }).catch(() => {
     // 取消删除
   })
@@ -330,18 +371,47 @@ const handleDeleteExam = (row: any) => {
 const submitExamForm = async () => {
   if (!examFormRef.value) return
 
-  await examFormRef.value.validate((valid, fields) => {
+  await examFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 这里应该调用API添加或更新考试
-      if (dialogType.value === 'add') {
-        // 添加考试
-        ElMessage.success('添加成功')
-      } else {
-        // 更新考试
-        ElMessage.success('更新成功')
+      try {
+        // 准备提交的数据
+        const submitData = {
+          examId: examForm.examId,
+          title: examForm.title,
+          description: examForm.description,
+          duration: examForm.duration,
+          totalScore: examForm.totalScore,
+          passScore: examForm.passScore,
+          gradeId: examForm.gradeId,
+          status: examForm.status
+        }
+
+        let result
+        if (dialogType.value === 'add') {
+          // 添加考试
+          result = await addExam(submitData)
+          if (result.success) {
+            ElMessage.success('添加成功')
+            dialogVisible.value = false
+            fetchExamList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '添加失败')
+          }
+        } else {
+          // 更新考试
+          result = await updateExam(examForm.examId, submitData)
+          if (result.success) {
+            ElMessage.success('更新成功')
+            dialogVisible.value = false
+            fetchExamList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '更新失败')
+          }
+        }
+      } catch (error) {
+        console.error('提交考试表单失败:', error)
+        ElMessage.error('操作失败，请稍后重试')
       }
-      dialogVisible.value = false
-      fetchExamList()
     } else {
       console.log('表单验证失败', fields)
     }

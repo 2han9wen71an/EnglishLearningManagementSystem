@@ -116,7 +116,7 @@
               <div class="question-text">{{ currentQuestion.content }}</div>
 
               <!-- 选择题 -->
-              <div v-if="currentQuestion.type === 0" class="options-container">
+              <div v-if="currentQuestion.type === 0 || currentQuestion.questionType === 1" class="options-container">
                 <el-radio-group v-model="userAnswers[currentQuestion.questionId]">
                   <el-radio
                     v-for="option in parseOptions(currentQuestion.options)"
@@ -128,8 +128,29 @@
                 </el-radio-group>
               </div>
 
+              <!-- 多选题 -->
+              <div v-else-if="currentQuestion.questionType === 2" class="options-container">
+                <el-checkbox-group v-model="multiSelectAnswers[currentQuestion.questionId]" @change="handleMultiSelectChange(currentQuestion.questionId)">
+                  <el-checkbox
+                    v-for="option in parseOptions(currentQuestion.options)"
+                    :key="option.key"
+                    :label="option.key"
+                  >
+                    {{ option.key }}. {{ option.value }}
+                  </el-checkbox>
+                </el-checkbox-group>
+              </div>
+
+              <!-- 判断题 -->
+              <div v-else-if="currentQuestion.questionType === 3" class="options-container">
+                <el-radio-group v-model="userAnswers[currentQuestion.questionId]">
+                  <el-radio label="T">正确</el-radio>
+                  <el-radio label="F">错误</el-radio>
+                </el-radio-group>
+              </div>
+
               <!-- 填空题 -->
-              <div v-else-if="currentQuestion.type === 1" class="fill-container">
+              <div v-else-if="currentQuestion.type === 1 || currentQuestion.questionType === 4" class="fill-container">
                 <el-input
                   v-model="userAnswers[currentQuestion.questionId]"
                   placeholder="请输入答案"
@@ -137,7 +158,7 @@
               </div>
 
               <!-- 简答题 -->
-              <div v-else-if="currentQuestion.type === 2" class="essay-container">
+              <div v-else-if="currentQuestion.type === 2 || currentQuestion.questionType === 5" class="essay-container">
                 <el-input
                   v-model="userAnswers[currentQuestion.questionId]"
                   type="textarea"
@@ -228,11 +249,29 @@
               <div class="answer-comparison">
                 <div class="user-answer">
                   <span class="answer-label">你的答案:</span>
-                  <span class="answer-value">{{ userAnswers[question.questionId] || '未作答' }}</span>
+                  <span class="answer-value">
+                    <!-- 选择题和判断题显示选项内容 -->
+                    <template v-if="question.type === 0 || question.questionType === 1 || question.questionType === 2 || question.questionType === 3">
+                      {{ formatAnswerDisplay(question, userAnswers[question.questionId]) }}
+                    </template>
+                    <!-- 填空题和简答题直接显示 -->
+                    <template v-else>
+                      {{ userAnswers[question.questionId] || '未作答' }}
+                    </template>
+                  </span>
                 </div>
                 <div class="correct-answer">
                   <span class="answer-label">正确答案:</span>
-                  <span class="answer-value">{{ question.answer }}</span>
+                  <span class="answer-value">
+                    <!-- 选择题和判断题显示选项内容 -->
+                    <template v-if="question.type === 0 || question.questionType === 1 || question.questionType === 2 || question.questionType === 3">
+                      {{ formatAnswerDisplay(question, question.answer || question.correctAnswer) }}
+                    </template>
+                    <!-- 填空题和简答题直接显示 -->
+                    <template v-else>
+                      {{ question.answer || question.correctAnswer }}
+                    </template>
+                  </span>
                 </div>
               </div>
 
@@ -300,6 +339,8 @@ const questions = ref<any[]>([])
 const currentQuestionIndex = ref(0)
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value] || null)
 const userAnswers = reactive<Record<number, string>>({})
+// 多选题答案临时存储
+const multiSelectAnswers = reactive<Record<number, string[]>>({})
 const remainingTime = ref(0)
 const timer = ref<number | null>(null)
 const showHistory = ref(false)
@@ -423,8 +464,47 @@ const nextQuestion = () => {
 }
 
 const parseOptions = (optionsStr: string) => {
+  if (!optionsStr) return []
+
   try {
-    return JSON.parse(optionsStr || '[]')
+    const options = JSON.parse(optionsStr)
+
+    // 检查选项格式 - 后端返回的是 {A: "内容", B: "内容"} 格式
+    // 需要转换为前端使用的 [{key: "A", value: "内容"}] 格式
+    if (typeof options === 'object' && !Array.isArray(options)) {
+      console.log('转换选项格式', options)
+      const result = []
+
+      // 遍历对象属性（A, B, C, D...）并按字母顺序排序
+      Object.keys(options).sort().forEach(key => {
+        result.push({
+          key: key,
+          value: options[key]
+        })
+      })
+
+      return result
+    } else if (Array.isArray(options)) {
+      // 如果已经是数组格式，确保每个元素有key和value属性
+      return options.map((opt, index) => {
+        if (opt.key && opt.value) {
+          return opt
+        } else if (opt.content) {
+          // 如果是管理端格式 {content: "内容", isCorrect: false}
+          return {
+            key: String.fromCharCode(65 + index), // A, B, C, D...
+            value: opt.content
+          }
+        } else {
+          return {
+            key: String.fromCharCode(65 + index),
+            value: opt
+          }
+        }
+      })
+    }
+
+    return []
   } catch (e) {
     console.error('解析选项出错:', e)
     return []
@@ -432,12 +512,69 @@ const parseOptions = (optionsStr: string) => {
 }
 
 const getQuestionTypeName = (type: number) => {
+  // 兼容两种类型编号系统
   switch (type) {
     case 0: return '选择题'
     case 1: return '填空题'
     case 2: return '简答题'
+    case 3: return '判断题'
+    // 新的类型编号
+    case 1: return '单选题'
+    case 2: return '多选题'
+    case 3: return '判断题'
+    case 4: return '填空题'
+    case 5: return '简答题'
     default: return '未知类型'
   }
+}
+
+// 格式化答案显示
+const formatAnswerDisplay = (question: any, answer: string) => {
+  if (!answer) return '未作答'
+
+  // 判断题特殊处理
+  if (question.questionType === 3) {
+    return answer === 'T' ? '正确' : '错误'
+  }
+
+  // 单选题
+  if (question.type === 0 || question.questionType === 1) {
+    try {
+      const options = parseOptions(question.options)
+      const option = options.find(opt => opt.key === answer)
+      if (option) {
+        return `${answer}. ${option.value}`
+      }
+    } catch (e) {
+      console.error('格式化答案显示出错:', e)
+    }
+    return answer
+  }
+
+  // 多选题
+  if (question.questionType === 2) {
+    try {
+      const options = parseOptions(question.options)
+      const answerArray = answer.split(',')
+      const displayParts = []
+
+      for (const key of answerArray) {
+        const option = options.find(opt => opt.key === key)
+        if (option) {
+          displayParts.push(`${key}. ${option.value}`)
+        } else {
+          displayParts.push(key)
+        }
+      }
+
+      return displayParts.join('，')
+    } catch (e) {
+      console.error('格式化多选答案显示出错:', e)
+    }
+    return answer
+  }
+
+  return answer
 }
 
 const confirmSubmit = () => {
@@ -576,13 +713,34 @@ const isAnswerCorrect = (question: any) => {
   if (!userAnswer) return false
 
   // 选择题直接比较
-  if (question.type === 0) {
-    return userAnswer === question.answer
+  if (question.type === 0 || question.questionType === 1) { // 兼容不同的类型值
+    // 处理单选题
+    return userAnswer.trim().toUpperCase() === question.answer.trim().toUpperCase()
+  } else if (question.type === 1 || question.questionType === 4) {
+    // 填空题，简单实现为完全匹配（忽略大小写和前后空格）
+    return userAnswer.trim().toLowerCase() === question.answer.trim().toLowerCase()
+  } else if (question.type === 2 || question.questionType === 5) {
+    // 简答题，这里简单实现为完全匹配
+    // 实际应用中可能需要更复杂的匹配逻辑，如AI评分
+    return userAnswer.trim() === question.answer.trim()
+  } else if (question.questionType === 2) {
+    // 多选题，需要比较所有选项
+    const userAnswerArray = userAnswer.split(',').map(a => a.trim().toUpperCase()).sort()
+    const correctAnswerArray = question.answer.split(',').map(a => a.trim().toUpperCase()).sort()
+
+    if (userAnswerArray.length !== correctAnswerArray.length) return false
+
+    for (let i = 0; i < userAnswerArray.length; i++) {
+      if (userAnswerArray[i] !== correctAnswerArray[i]) return false
+    }
+
+    return true
+  } else if (question.questionType === 3) {
+    // 判断题
+    return userAnswer.trim().toUpperCase() === question.answer.trim().toUpperCase()
   }
 
-  // 填空题和简答题，这里简单实现为完全匹配
-  // 实际应用中可能需要更复杂的匹配逻辑
-  return userAnswer === question.answer
+  return false
 }
 
 // 本地存储相关
@@ -598,6 +756,14 @@ const saveAnswersToStorage = () => {
   }
 }
 
+// 处理多选题答案变更
+const handleMultiSelectChange = (questionId: number) => {
+  // 将多选答案数组转换为逗号分隔的字符串，如 "A,B,C"
+  const selectedOptions = multiSelectAnswers[questionId] || []
+  userAnswers[questionId] = selectedOptions.sort().join(',')
+  console.log('多选题答案更新:', questionId, userAnswers[questionId])
+}
+
 const loadAnswersFromStorage = () => {
   const key = getStorageKey()
   if (key) {
@@ -606,7 +772,14 @@ const loadAnswersFromStorage = () => {
       try {
         const parsed = JSON.parse(savedAnswers)
         Object.keys(parsed).forEach(key => {
-          userAnswers[key] = parsed[key]
+          const questionId = parseInt(key)
+          userAnswers[questionId] = parsed[key]
+
+          // 如果是多选题，还需要解析为数组
+          const question = questions.value.find(q => q.questionId === questionId)
+          if (question && (question.questionType === 2)) {
+            multiSelectAnswers[questionId] = userAnswers[questionId].split(',')
+          }
         })
       } catch (e) {
         console.error('加载保存的答案失败:', e)

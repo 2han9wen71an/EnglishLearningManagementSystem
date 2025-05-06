@@ -41,4 +41,11 @@ public class NoticeServiceImpl implements NoticeService {
     public Notice queryNewNoticeById() {
         return noticeMapper.queryNewNoticeById();
     }
+
+    @Override
+    public int queryAllNoticeCount() {
+        // 获取所有公告数量
+        List<Notice> notices = noticeMapper.queryAllNotice();
+        return notices != null ? notices.size() : 0;
+    }
 }

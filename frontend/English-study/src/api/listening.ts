@@ -1,9 +1,9 @@
 import request from '@/utils/request'
 
 // 获取听力列表
-export function getListeningList(params: { level?: string; year?: string; page?: number; size?: number; query?: string }) {
+export function getListeningList(params: { grade?: number; page?: number; size?: number; query?: string }) {
   return request({
-    url: '/listening',
+    url: '/listens',
     method: 'get',
     params
   })
@@ -12,7 +12,7 @@ export function getListeningList(params: { level?: string; year?: string; page?:
 // 获取听力详情
 export function getListeningDetail(id: number) {
   return request({
-    url: `/listening/${id}`,
+    url: `/listens/${id}`,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getListeningDetail(id: number) {
 // 添加听力（管理员）
 export function addListening(data: any) {
   return request({
-    url: '/admin/listening',
+    url: '/listens',
     method: 'post',
     data
   })
@@ -29,7 +29,7 @@ export function addListening(data: any) {
 // 更新听力（管理员）
 export function updateListening(id: number, data: any) {
   return request({
-    url: `/admin/listening/${id}`,
+    url: `/listens/${id}`,
     method: 'put',
     data
   })
@@ -38,7 +38,7 @@ export function updateListening(id: number, data: any) {
 // 删除听力（管理员）
 export function deleteListening(id: number) {
   return request({
-    url: `/admin/listening/${id}`,
+    url: `/listens/${id}`,
     method: 'delete'
   })
 }
@@ -46,7 +46,7 @@ export function deleteListening(id: number) {
 // 上传音频文件
 export function uploadAudio(data: FormData) {
   return request({
-    url: '/upload/audio',
+    url: '/files/upload/audio',
     method: 'post',
     data,
     headers: {
@@ -58,7 +58,7 @@ export function uploadAudio(data: FormData) {
 // 获取听力等级列表
 export function getListeningLevelList() {
   return request({
-    url: '/listening/levels',
+    url: '/listens/levels',
     method: 'get'
   })
 }

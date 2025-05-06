@@ -117,7 +117,9 @@
               <el-input v-model="option.content" placeholder="请输入选项内容" />
               <el-checkbox v-model="option.isCorrect" v-if="questionForm.questionType === 2">正确</el-checkbox>
               <el-radio v-model="correctOptionIndex" :label="index" v-if="questionForm.questionType === 1">正确</el-radio>
-              <el-button type="danger" icon="Delete" circle @click="removeOption(index)" v-if="questionOptions.length > 2" />
+              <el-button type="danger" circle @click="removeOption(index)" v-if="questionOptions.length > 2">
+                <el-icon><Delete /></el-icon>
+              </el-button>
             </div>
           </el-form-item>
           <el-form-item>
@@ -174,13 +176,13 @@
         <!-- 选择题选项 -->
         <div class="question-options" v-if="previewQuestion.questionType === 1 || previewQuestion.questionType === 2">
           <div
-            v-for="(option, index) in JSON.parse(previewQuestion.options || '[]')"
+            v-for="(optionKey, index) in Object.keys(parseOptions(previewQuestion.options)).sort()"
             :key="index"
             class="option-item"
-            :class="{ 'correct-option': isCorrectOption(option, previewQuestion) }"
+            :class="{ 'correct-option': isCorrectOptionKey(optionKey, previewQuestion) }"
           >
-            <span class="option-label">{{ String.fromCharCode(65 + index) }}.</span>
-            <span class="option-content">{{ option.content }}</span>
+            <span class="option-label">{{ optionKey }}.</span>
+            <span class="option-content">{{ parseOptions(previewQuestion.options)[optionKey] }}</span>
           </div>
         </div>
 
@@ -211,6 +213,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Back, Delete } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getExamDetail, getExamQuestionList, addExamQuestion, updateExamQuestion, deleteExamQuestion } from '@/api/exam'
 
 const route = useRoute()
 const router = useRouter()
@@ -254,7 +257,7 @@ const getQuestionTypeName = (typeId: number) => {
 // 获取题目类型标签类型
 const getQuestionTypeTagType = (typeId: number) => {
   switch (typeId) {
-    case 1: return ''
+    case 1: return 'primary' // 将空字符串改为 'primary'
     case 2: return 'success'
     case 3: return 'info'
     case 4: return 'warning'
@@ -322,51 +325,80 @@ const questionFormRules = reactive<FormRules>({
 })
 
 // 获取考试信息
-const fetchExamInfo = () => {
+const fetchExamInfo = async () => {
   if (!examId.value) {
     ElMessage.error('考试ID不能为空')
     router.push('/admin/exams')
     return
   }
 
-  // 这里应该调用API获取考试信息
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    Object.assign(examInfo, {
-      examId: examId.value,
-      title: '英语四级词汇测试',
-      description: '测试你的英语四级词汇掌握程度',
-      duration: 30,
-      totalScore: 100,
-      passScore: 60,
-      gradeId: 1,
-      gradeName: '四级',
-      status: 1
-    })
+  try {
+    const result = await getExamDetail(examId.value)
+    if (result.success) {
+      const exam = result.data
+      Object.assign(examInfo, {
+        examId: exam.examId,
+        title: exam.title,
+        description: exam.description,
+        duration: exam.duration,
+        totalScore: exam.totalScore,
+        passScore: exam.passScore,
+        gradeId: exam.gradeId,
+        gradeName: getGradeName(exam.gradeId),
+        status: exam.status
+      })
 
-    // 获取题目列表
-    fetchQuestionList()
-  }, 500)
+      // 获取题目列表
+      fetchQuestionList()
+    } else {
+      ElMessage.error(result.message || '获取考试信息失败')
+    }
+  } catch (error) {
+    console.error('获取考试信息失败:', error)
+    ElMessage.error('获取考试信息失败，请稍后重试')
+  }
+}
+
+// 根据等级ID获取等级名称
+const getGradeName = (gradeId: number) => {
+  const gradeMap: Record<number, string> = {
+    1: '四级',
+    2: '六级',
+    3: '托福',
+    4: '雅思'
+  }
+  return gradeMap[gradeId] || '未知'
 }
 
 // 获取题目列表
-const fetchQuestionList = () => {
+const fetchQuestionList = async () => {
   loading.value = true
-  // 这里应该调用API获取题目列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockQuestions = [
-      { questionId: 1, examId: examId.value, questionType: 1, questionContent: 'What is the capital of France?', options: JSON.stringify([{content: 'Paris', isCorrect: true}, {content: 'London', isCorrect: false}, {content: 'Berlin', isCorrect: false}, {content: 'Rome', isCorrect: false}]), correctAnswer: 'A', score: 5, analysis: 'Paris is the capital of France.', orderNum: 1 },
-      { questionId: 2, examId: examId.value, questionType: 2, questionContent: 'Which of the following are mammals?', options: JSON.stringify([{content: 'Dolphin', isCorrect: true}, {content: 'Shark', isCorrect: false}, {content: 'Whale', isCorrect: true}, {content: 'Bat', isCorrect: true}]), correctAnswer: 'A,C,D', score: 10, analysis: 'Dolphins, whales, and bats are mammals.', orderNum: 2 },
-      { questionId: 3, examId: examId.value, questionType: 3, questionContent: 'The Earth is flat.', options: '', correctAnswer: 'F', score: 5, analysis: 'The Earth is approximately spherical.', orderNum: 3 },
-      { questionId: 4, examId: examId.value, questionType: 4, questionContent: 'The largest planet in our solar system is _______.', options: '', correctAnswer: 'Jupiter', score: 5, analysis: 'Jupiter is the largest planet in our solar system.', orderNum: 4 },
-      { questionId: 5, examId: examId.value, questionType: 5, questionContent: 'Explain the water cycle.', options: '', correctAnswer: 'The water cycle is the continuous movement of water within the Earth and atmosphere. It includes processes like evaporation, condensation, precipitation, etc.', score: 15, analysis: '', orderNum: 5 }
-    ]
+  try {
+    const result = await getExamQuestionList(examId.value)
+    if (result.success) {
+      questionList.value = result.data || []
 
-    total.value = mockQuestions.length
-    questionList.value = mockQuestions
+      // 处理选项格式，确保是JSON字符串
+      questionList.value.forEach(question => {
+        if (question.options && typeof question.options === 'object') {
+          question.options = JSON.stringify(question.options)
+        }
+      })
+
+      total.value = questionList.value.length
+    } else {
+      ElMessage.error(result.message || '获取题目列表失败')
+      questionList.value = []
+      total.value = 0
+    }
+  } catch (error) {
+    console.error('获取题目列表失败:', error)
+    ElMessage.error('获取题目列表失败，请稍后重试')
+    questionList.value = []
+    total.value = 0
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 分页相关
@@ -424,13 +456,69 @@ const handleEditQuestion = (row: any) => {
   // 处理选项
   if (row.questionType === 1 || row.questionType === 2) {
     try {
-      const options = JSON.parse(row.options)
-      questionOptions.value = options
+      // 确保options是字符串格式
+      const optionsStr = typeof row.options === 'string' ? row.options : JSON.stringify(row.options)
+      const optionsObj = JSON.parse(optionsStr)
+
+      // 检查选项格式 - 后端返回的是 {A: "内容", B: "内容"} 格式
+      // 需要转换为前端使用的 [{content: "内容", isCorrect: false}] 格式
+      if (!Array.isArray(optionsObj)) {
+        console.log('转换选项格式', optionsObj)
+        // 清空现有选项
+        questionOptions.value = []
+
+        // 遍历对象属性（A, B, C, D...）
+        Object.keys(optionsObj).forEach(key => {
+          questionOptions.value.push({
+            content: optionsObj[key],
+            isCorrect: false
+          })
+        })
+      } else {
+        // 如果已经是数组格式，直接使用
+        questionOptions.value = optionsObj
+      }
+
+      // 确保至少有两个选项
+      if (questionOptions.value.length < 2) {
+        while (questionOptions.value.length < 2) {
+          questionOptions.value.push({ content: '', isCorrect: false })
+        }
+      }
 
       if (row.questionType === 1) {
         // 单选题，找出正确选项的索引
-        const correctIndex = options.findIndex((opt: any) => opt.isCorrect)
-        correctOptionIndex.value = correctIndex >= 0 ? correctIndex : 0
+        if (row.correctAnswer) {
+          const correctLetter = row.correctAnswer.trim().charAt(0)
+          // 将字母转换为索引 (A->0, B->1, ...)
+          const letterIndex = correctLetter.charCodeAt(0) - 65 // 'A'的ASCII码是65
+
+          if (letterIndex >= 0 && letterIndex < questionOptions.value.length) {
+            correctOptionIndex.value = letterIndex
+            console.log('设置单选题正确选项索引为:', correctOptionIndex.value, '(', correctLetter, ')')
+          } else {
+            correctOptionIndex.value = 0
+            console.warn('无法确定正确选项索引，使用默认值0')
+          }
+        } else {
+          correctOptionIndex.value = 0
+        }
+      } else if (row.questionType === 2) {
+        // 多选题，标记所有正确选项
+        // 先重置所有选项为未选中
+        questionOptions.value.forEach(opt => opt.isCorrect = false)
+
+        // 然后根据correctAnswer标记正确选项
+        if (row.correctAnswer) {
+          const correctLetters = row.correctAnswer.split(',')
+          correctLetters.forEach(letter => {
+            const letterIndex = letter.trim().charCodeAt(0) - 65 // 'A'的ASCII码是65
+            if (letterIndex >= 0 && letterIndex < questionOptions.value.length) {
+              questionOptions.value[letterIndex].isCorrect = true
+              console.log('设置多选题正确选项:', letter.trim())
+            }
+          })
+        }
       }
     } catch (e) {
       console.error('解析选项失败', e)
@@ -460,10 +548,20 @@ const handleDeleteQuestion = (row: any) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    // 这里应该调用API删除题目
-    ElMessage.success('删除成功')
-    fetchQuestionList()
+  ).then(async () => {
+    try {
+      // 调用API删除题目
+      const result = await deleteExamQuestion(examId.value, row.questionId)
+      if (result.success) {
+        ElMessage.success('删除成功')
+        fetchQuestionList() // 重新获取题目列表
+      } else {
+        ElMessage.error(result.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除题目失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
   }).catch(() => {
     // 取消删除
   })
@@ -508,6 +606,34 @@ const removeOption = (index: number) => {
   }
 }
 
+// 解析选项字符串为对象
+const parseOptions = (optionsStr: string): Record<string, string> => {
+  if (!optionsStr) return {}
+
+  try {
+    const options = JSON.parse(optionsStr)
+    // 如果已经是对象格式，直接返回
+    if (typeof options === 'object' && !Array.isArray(options)) {
+      return options
+    }
+
+    // 如果是数组格式，转换为对象格式
+    if (Array.isArray(options)) {
+      const result: Record<string, string> = {}
+      options.forEach((opt, index) => {
+        const key = String.fromCharCode(65 + index) // A, B, C, D...
+        result[key] = opt.content
+      })
+      return result
+    }
+
+    return {}
+  } catch (e) {
+    console.error('解析选项失败', e)
+    return {}
+  }
+}
+
 // 检查选项是否为正确选项
 const isCorrectOption = (option: any, question: any) => {
   if (question.questionType === 1) {
@@ -516,6 +642,21 @@ const isCorrectOption = (option: any, question: any) => {
   } else if (question.questionType === 2) {
     // 多选题
     return option.isCorrect
+  }
+  return false
+}
+
+// 检查选项键是否为正确选项
+const isCorrectOptionKey = (optionKey: string, question: any) => {
+  if (!question.correctAnswer) return false
+
+  if (question.questionType === 1) {
+    // 单选题
+    return optionKey === question.correctAnswer
+  } else if (question.questionType === 2) {
+    // 多选题
+    const correctOptions = question.correctAnswer.split(',')
+    return correctOptions.includes(optionKey)
   }
   return false
 }
@@ -535,8 +676,17 @@ const submitQuestionForm = async () => {
     // 设置正确答案（A, B, C, D...）
     questionForm.correctAnswer = String.fromCharCode(65 + correctOptionIndex.value)
 
+    // 将选项转换为后端期望的格式 {A: "内容", B: "内容", ...}
+    const optionsObj: Record<string, string> = {}
+    questionOptions.value.forEach((opt, index) => {
+      const key = String.fromCharCode(65 + index) // A, B, C, D...
+      optionsObj[key] = opt.content
+    })
+
     // 序列化选项
-    questionForm.options = JSON.stringify(questionOptions.value)
+    questionForm.options = JSON.stringify(optionsObj)
+    console.log('提交单选题选项:', questionForm.options)
+    console.log('提交单选题正确答案:', questionForm.correctAnswer)
   } else if (questionForm.questionType === 2) {
     // 多选题
     // 设置正确答案（A,B,C...）
@@ -546,22 +696,61 @@ const submitQuestionForm = async () => {
 
     questionForm.correctAnswer = correctIndices.join(',')
 
+    // 将选项转换为后端期望的格式 {A: "内容", B: "内容", ...}
+    const optionsObj: Record<string, string> = {}
+    questionOptions.value.forEach((opt, index) => {
+      const key = String.fromCharCode(65 + index) // A, B, C, D...
+      optionsObj[key] = opt.content
+    })
+
     // 序列化选项
-    questionForm.options = JSON.stringify(questionOptions.value)
+    questionForm.options = JSON.stringify(optionsObj)
+    console.log('提交多选题选项:', questionForm.options)
+    console.log('提交多选题正确答案:', questionForm.correctAnswer)
   }
 
-  await questionFormRef.value.validate((valid, fields) => {
+  await questionFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 这里应该调用API添加或更新题目
-      if (dialogType.value === 'add') {
-        // 添加题目
-        ElMessage.success('添加成功')
-      } else {
-        // 更新题目
-        ElMessage.success('更新成功')
+      try {
+        // 准备提交的数据
+        const submitData = {
+          questionId: questionForm.questionId,
+          examId: questionForm.examId,
+          questionType: questionForm.questionType,
+          questionContent: questionForm.questionContent,
+          options: questionForm.options,
+          correctAnswer: questionForm.correctAnswer,
+          score: questionForm.score,
+          analysis: questionForm.analysis,
+          orderNum: questionForm.orderNum
+        }
+
+        let result
+        if (dialogType.value === 'add') {
+          // 添加题目
+          result = await addExamQuestion(examId.value, submitData)
+          if (result.success) {
+            ElMessage.success('添加成功')
+            dialogVisible.value = false
+            fetchQuestionList() // 重新获取题目列表
+          } else {
+            ElMessage.error(result.message || '添加失败')
+          }
+        } else {
+          // 更新题目
+          result = await updateExamQuestion(examId.value, questionForm.questionId, submitData)
+          if (result.success) {
+            ElMessage.success('更新成功')
+            dialogVisible.value = false
+            fetchQuestionList() // 重新获取题目列表
+          } else {
+            ElMessage.error(result.message || '更新失败')
+          }
+        }
+      } catch (error) {
+        console.error('提交题目表单失败:', error)
+        ElMessage.error('操作失败，请稍后重试')
       }
-      dialogVisible.value = false
-      fetchQuestionList()
     } else {
       console.log('表单验证失败', fields)
     }

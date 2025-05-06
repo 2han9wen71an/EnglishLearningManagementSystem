@@ -220,19 +220,60 @@ public class UserApiController {
     }
 
     /**
-     * 管理员：获取所有用户
+     * 管理员：获取所有用户（支持分页和搜索）
      */
-    @ApiOperation(value = "获取所有用户", notes = "管理员接口：获取所有用户信息")
+    @ApiOperation(value = "获取所有用户", notes = "管理员接口：获取所有用户信息，支持分页和搜索")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
-        List<User> users = userService.queryAllUser();
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllUsers(
+            @ApiParam(value = "页码", defaultValue = "1") @RequestParam(required = false, defaultValue = "1") Integer page,
+            @ApiParam(value = "每页数量", defaultValue = "10") @RequestParam(required = false, defaultValue = "10") Integer size,
+            @ApiParam(value = "搜索关键词") @RequestParam(required = false) String query,
+            @ApiParam(value = "角色筛选") @RequestParam(required = false) Integer role) {
+
+        List<User> allUsers = userService.queryAllUser();
+        List<User> filteredUsers = new java.util.ArrayList<>(allUsers);
+
+        // 根据搜索条件过滤
+        if (query != null && !query.isEmpty()) {
+            String queryLower = query.toLowerCase();
+            filteredUsers.removeIf(user ->
+                (user.getUserName() == null || !user.getUserName().toLowerCase().contains(queryLower)) &&
+                (user.getEmail() == null || !user.getEmail().toLowerCase().contains(queryLower))
+            );
+        }
+
+        // 根据角色筛选
+        if (role != null) {
+            filteredUsers.removeIf(user -> user.getRole() != role);
+        }
+
+        // 计算总数
+        int total = filteredUsers.size();
+
+        // 分页处理
+        int startIndex = (page - 1) * size;
+        int endIndex = Math.min(startIndex + size, filteredUsers.size());
+
+        List<User> pagedUsers;
+        if (startIndex < filteredUsers.size()) {
+            pagedUsers = filteredUsers.subList(startIndex, endIndex);
+        } else {
+            pagedUsers = new java.util.ArrayList<>();
+        }
+
         // 出于安全考虑，清除所有用户的密码和激活码
-        for (User user : users) {
+        for (User user : pagedUsers) {
             user.setPassword(null);
             user.setActiveCode(null);
         }
 
-        return ResponseEntity.ok(ApiResponse.success(users));
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", pagedUsers);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     /**

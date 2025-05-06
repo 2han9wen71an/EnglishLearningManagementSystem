@@ -163,6 +163,7 @@ const fetchGradeOptions = async () => {
   try {
     const res = await getWordGradeList()
     if (res.success && res.data) {
+      console.log('获取到的等级选项:', res.data)
       gradeOptions.value = res.data.map((item: any) => ({
         value: item.gradeId,
         label: item.gradeName
@@ -236,8 +237,10 @@ const fetchWordList = async () => {
 
     const res = await getWordList(params)
     if (res.success) {
-      wordList.value = res.data.records || []
+      // 使用 list 字段而不是 records 字段
+      wordList.value = res.data.list || []
       total.value = res.data.total || 0
+      console.log('获取到的单词列表:', wordList.value)
     } else {
       ElMessage.error(res.message || '获取单词列表失败')
     }

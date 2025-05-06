@@ -2,6 +2,7 @@ package com.chun.myspringboot.service;
 
 import com.chun.myspringboot.pojo.Exam;
 import java.util.List;
+import java.util.Map;
 
 public interface ExamService {
     // 添加考试
@@ -38,4 +39,16 @@ public interface ExamService {
      * @return 平均分
      */
     double queryUserExamAverageScore(Integer userId);
+
+    /**
+     * 获取考试总数
+     * @return 考试总数
+     */
+    int queryAllExamsCount();
+
+    /**
+     * 获取考试完成情况统计
+     * @return 考试完成情况统计数据
+     */
+    Map<String, Integer> getExamCompletionStats();
 }

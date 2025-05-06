@@ -23,7 +23,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        
+
         <el-select v-model="levelFilter" placeholder="等级筛选" clearable @change="handleSearch">
           <el-option
             v-for="item in levelOptions"
@@ -32,7 +32,7 @@
             :value="item.value"
           />
         </el-select>
-        
+
         <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
 
@@ -56,23 +56,23 @@
         <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="250">
           <template #default="scope">
-            <el-button 
-              size="small" 
-              type="primary" 
+            <el-button
+              size="small"
+              type="primary"
               @click="handleEditReading(scope.row)"
             >
               编辑
             </el-button>
-            <el-button 
-              size="small" 
-              type="success" 
+            <el-button
+              size="small"
+              type="success"
               @click="handlePreviewReading(scope.row)"
             >
               预览
             </el-button>
-            <el-button 
-              size="small" 
-              type="danger" 
+            <el-button
+              size="small"
+              type="danger"
               @click="handleDeleteReading(scope.row)"
             >
               删除
@@ -110,6 +110,9 @@
         <el-form-item label="标题" prop="title">
           <el-input v-model="readingForm.title" placeholder="请输入标题" />
         </el-form-item>
+        <el-form-item label="作者" prop="author">
+          <el-input v-model="readingForm.author" placeholder="请输入作者" />
+        </el-form-item>
         <el-form-item label="等级" prop="level">
           <el-select v-model="readingForm.level" placeholder="请选择等级">
             <el-option
@@ -119,6 +122,9 @@
               :value="item.value"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="readingForm.description" type="textarea" :rows="3" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="内容" prop="content">
           <div class="editor-container">
@@ -141,9 +147,17 @@
       width="800px"
     >
       <h2 class="preview-title">{{ previewReading.title }}</h2>
+      <div v-if="previewReading.author" class="preview-author">作者：{{ previewReading.author }}</div>
       <div class="preview-level">等级：{{ getLevelName(previewReading.level) }}</div>
       <div class="preview-time">创建时间：{{ previewReading.createTime }}</div>
-      <div class="preview-content" v-html="previewReading.content"></div>
+      <div v-if="previewReading.description" class="preview-description">
+        <h3>描述</h3>
+        <p>{{ previewReading.description }}</p>
+      </div>
+      <div class="preview-content">
+        <h3>内容</h3>
+        <div v-html="previewReading.content"></div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -153,6 +167,7 @@ import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getReadingList, addReading, updateReading, deleteReading } from '@/api/reading'
 
 // 引入富文本编辑器
 let editor: any = null
@@ -199,7 +214,9 @@ const readingForm = reactive({
   id: 0,
   title: '',
   level: 'cet4',
-  content: ''
+  content: '',
+  author: '',
+  description: ''
 })
 
 // 预览相关
@@ -208,7 +225,9 @@ const previewReading = reactive({
   title: '',
   level: '',
   content: '',
-  createTime: ''
+  createTime: '',
+  author: '',
+  description: ''
 })
 
 // 表单验证规则
@@ -217,8 +236,16 @@ const readingFormRules = reactive<FormRules>({
     { required: true, message: '请输入标题', trigger: 'blur' },
     { min: 2, max: 100, message: '长度在 2 到 100 个字符', trigger: 'blur' }
   ],
+  author: [
+    { required: false, message: '请输入作者', trigger: 'blur' },
+    { max: 50, message: '长度不超过 50 个字符', trigger: 'blur' }
+  ],
   level: [
     { required: true, message: '请选择等级', trigger: 'change' }
+  ],
+  description: [
+    { required: false, message: '请输入描述', trigger: 'blur' },
+    { max: 500, message: '长度不超过 500 个字符', trigger: 'blur' }
   ],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' }
@@ -245,52 +272,116 @@ const initEditor = () => {
   }, 100)
 }
 
+// 原始阅读材料列表数据（未筛选）
+const originalReadingList = ref([])
+
 // 获取阅读材料列表
 const fetchReadingList = () => {
   loading.value = true
-  // 这里应该调用API获取阅读材料列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockReadings = [
-      { id: 1, title: '四级阅读：The Digital Age', level: 'cet4', content: '<p>The digital age has transformed how we live, work, and communicate...</p>', createTime: '2023-05-01' },
-      { id: 2, title: '六级阅读：Climate Change', level: 'cet6', content: '<p>Climate change is one of the most pressing issues facing our planet today...</p>', createTime: '2023-05-02' },
-      { id: 3, title: '雅思阅读：Urban Planning', level: 'ielts', content: '<p>Urban planning is the process of developing and designing urban areas...</p>', createTime: '2023-05-03' }
-    ]
-    
-    // 根据搜索条件过滤
-    let filteredReadings = [...mockReadings]
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredReadings = filteredReadings.filter(reading => 
-        reading.title.toLowerCase().includes(query)
-      )
-    }
-    
-    if (levelFilter.value !== '') {
-      filteredReadings = filteredReadings.filter(reading => reading.level === levelFilter.value)
-    }
-    
-    total.value = filteredReadings.length
-    readingList.value = filteredReadings
-    loading.value = false
-  }, 500)
+
+  // 调用API获取阅读材料列表（不带筛选参数）
+  getReadingList({})
+    .then(res => {
+      if (res.success) {
+        // 保存原始数据
+        originalReadingList.value = res.data || []
+
+        // 将Book对象映射为阅读材料对象
+        originalReadingList.value = originalReadingList.value.map((book: any) => ({
+          id: book.bookId,
+          title: book.bookName,
+          level: mapGradeToLevel(book.grade),
+          content: book.content,
+          createTime: book.createTime || new Date().toISOString().split('T')[0],
+          description: book.description,
+          author: book.bookUser
+        }))
+
+        // 应用本地筛选
+        applyLocalFilters()
+      } else {
+        ElMessage.error(res.message || '获取阅读材料列表失败')
+        originalReadingList.value = []
+        readingList.value = []
+        total.value = 0
+      }
+    })
+    .catch(err => {
+      console.error('获取阅读材料列表出错:', err)
+      ElMessage.error('获取阅读材料列表失败，请稍后重试')
+      originalReadingList.value = []
+      readingList.value = []
+      total.value = 0
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+
+// 将数字等级映射为字符串等级代码
+const mapGradeToLevel = (grade: number) => {
+  switch (grade) {
+    case 1: return 'cet4'
+    case 2: return 'cet6'
+    case 3: return 'toefl'
+    case 4: return 'ielts'
+    default: return 'cet4'
+  }
+}
+
+// 将字符串等级代码映射为数字等级
+const mapLevelToGrade = (level: string) => {
+  switch (level) {
+    case 'cet4': return 1
+    case 'cet6': return 2
+    case 'toefl': return 3
+    case 'ielts': return 4
+    default: return 1
+  }
+}
+
+// 在前端应用筛选
+const applyLocalFilters = () => {
+  // 从原始数据开始筛选
+  let filteredData = [...originalReadingList.value]
+
+  // 应用等级筛选
+  if (levelFilter.value) {
+    filteredData = filteredData.filter(item => item.level === levelFilter.value)
+  }
+
+  // 应用搜索关键词筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filteredData = filteredData.filter(item =>
+      item.title.toLowerCase().includes(query)
+    )
+  }
+
+  // 计算总数
+  total.value = filteredData.length
+
+  // 应用分页
+  const startIndex = (currentPage.value - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  readingList.value = filteredData.slice(startIndex, endIndex)
 }
 
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
-  fetchReadingList()
+  applyLocalFilters()
 }
 
 // 分页相关
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  fetchReadingList()
+  applyLocalFilters()
 }
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  fetchReadingList()
+  applyLocalFilters()
 }
 
 // 添加阅读材料
@@ -300,6 +391,8 @@ const handleAddReading = () => {
   readingForm.title = ''
   readingForm.level = 'cet4'
   readingForm.content = ''
+  readingForm.author = ''
+  readingForm.description = ''
   dialogVisible.value = true
   // 初始化编辑器
   setTimeout(() => {
@@ -314,6 +407,8 @@ const handleEditReading = (row: any) => {
   readingForm.title = row.title
   readingForm.level = row.level
   readingForm.content = row.content
+  readingForm.author = row.author || ''
+  readingForm.description = row.description || ''
   dialogVisible.value = true
   // 初始化编辑器
   setTimeout(() => {
@@ -327,6 +422,8 @@ const handlePreviewReading = (row: any) => {
   previewReading.level = row.level
   previewReading.content = row.content
   previewReading.createTime = row.createTime
+  previewReading.author = row.author || ''
+  previewReading.description = row.description || ''
   previewVisible.value = true
 }
 
@@ -340,10 +437,20 @@ const handleDeleteReading = (row: any) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    // 这里应该调用API删除阅读材料
-    ElMessage.success('删除成功')
-    fetchReadingList()
+  ).then(async () => {
+    try {
+      // 调用API删除阅读材料
+      const result = await deleteReading(row.id)
+      if (result.success) {
+        ElMessage.success('删除成功')
+        fetchReadingList() // 重新获取完整列表
+      } else {
+        ElMessage.error(result.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除阅读材料失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
   }).catch(() => {
     // 取消删除
   })
@@ -352,25 +459,52 @@ const handleDeleteReading = (row: any) => {
 // 提交阅读材料表单
 const submitReadingForm = async () => {
   if (!readingFormRef.value) return
-  
-  await readingFormRef.value.validate((valid, fields) => {
+
+  await readingFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 获取编辑器内容
-      const textarea = document.querySelector('#editor textarea') as HTMLTextAreaElement
-      if (textarea) {
-        readingForm.content = textarea.value
+      try {
+        // 获取编辑器内容
+        const textarea = document.querySelector('#editor textarea') as HTMLTextAreaElement
+        if (textarea) {
+          readingForm.content = textarea.value
+        }
+
+        // 准备提交的数据（将前端字段映射为后端字段）
+        const submitData = {
+          bookId: readingForm.id,
+          bookName: readingForm.title,
+          bookUser: readingForm.author,
+          description: readingForm.description,
+          content: readingForm.content,
+          grade: mapLevelToGrade(readingForm.level)
+        }
+
+        let result
+        if (dialogType.value === 'add') {
+          // 添加阅读材料
+          result = await addReading(submitData)
+          if (result.success) {
+            ElMessage.success('添加成功')
+            dialogVisible.value = false
+            fetchReadingList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '添加失败')
+          }
+        } else {
+          // 更新阅读材料
+          result = await updateReading(readingForm.id, submitData)
+          if (result.success) {
+            ElMessage.success('更新成功')
+            dialogVisible.value = false
+            fetchReadingList() // 重新获取完整列表
+          } else {
+            ElMessage.error(result.message || '更新失败')
+          }
+        }
+      } catch (error) {
+        console.error('提交阅读材料表单失败:', error)
+        ElMessage.error('操作失败，请稍后重试')
       }
-      
-      // 这里应该调用API添加或更新阅读材料
-      if (dialogType.value === 'add') {
-        // 添加阅读材料
-        ElMessage.success('添加成功')
-      } else {
-        // 更新阅读材料
-        ElMessage.success('更新成功')
-      }
-      dialogVisible.value = false
-      fetchReadingList()
     } else {
       console.log('表单验证失败', fields)
     }
@@ -442,13 +576,40 @@ onBeforeUnmount(() => {
   margin-bottom: 5px;
 }
 
+.preview-author {
+  color: #409EFF;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
 .preview-time {
   color: #909399;
   font-size: 14px;
   margin-bottom: 20px;
 }
 
+.preview-description {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+.preview-description h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .preview-content {
   line-height: 1.6;
+}
+
+.preview-content h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
 }
 </style>

@@ -20,7 +20,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        
+
         <el-select v-model="examFilter" placeholder="考试筛选" clearable @change="handleSearch">
           <el-option
             v-for="item in examOptions"
@@ -29,7 +29,7 @@
             :value="item.value"
           />
         </el-select>
-        
+
         <el-select v-model="statusFilter" placeholder="状态筛选" clearable @change="handleSearch">
           <el-option
             v-for="item in statusOptions"
@@ -38,7 +38,7 @@
             :value="item.value"
           />
         </el-select>
-        
+
         <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
 
@@ -65,9 +65,9 @@
         <el-table-column prop="submitTime" label="提交时间" width="180" />
         <el-table-column label="操作" width="150">
           <template #default="scope">
-            <el-button 
-              size="small" 
-              type="primary" 
+            <el-button
+              size="small"
+              type="primary"
               @click="handleViewDetail(scope.row)"
             >
               查看详情
@@ -110,7 +110,7 @@
             <p><span class="label">提交时间：</span>{{ detailScore.submitTime }}</p>
           </div>
         </div>
-        
+
         <div class="detail-answers">
           <h4>答题详情</h4>
           <el-table
@@ -130,9 +130,18 @@
             <el-table-column prop="questionContent" label="题目内容" show-overflow-tooltip />
             <el-table-column prop="userAnswer" label="用户答案" width="120" />
             <el-table-column prop="correctAnswer" label="正确答案" width="120" />
-            <el-table-column label="得分" width="80">
+            <el-table-column label="得分" width="120">
               <template #default="scope">
-                <span :class="{ 'correct-score': scope.row.isCorrect, 'wrong-score': !scope.row.isCorrect }">
+                <div v-if="scope.row.questionType === 5">
+                  <el-input-number
+                    v-model="scope.row.score"
+                    :min="0"
+                    :max="20"
+                    size="small"
+                    @change="handleScoreChange(scope.row)"
+                  />
+                </div>
+                <span v-else :class="{ 'correct-score': scope.row.isCorrect, 'wrong-score': !scope.row.isCorrect }">
                   {{ scope.row.score }}
                 </span>
               </template>
@@ -148,6 +157,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { getScoreList, getScoreDetail, updateEssayScore } from '@/api/score'
+import { getExamList } from '@/api/exam'
 
 // 成绩列表数据
 const scoreList = ref([])
@@ -228,53 +239,58 @@ const detailScore = reactive({
 const detailAnswers = ref([])
 
 // 获取考试选项
-const fetchExamOptions = () => {
-  // 这里应该调用API获取考试选项
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    examOptions.value = [
-      { value: 1, label: '英语四级词汇测试' },
-      { value: 2, label: '英语六级词汇测试' },
-      { value: 3, label: '雅思词汇测试' }
-    ]
-  }, 500)
+const fetchExamOptions = async () => {
+  try {
+    const res = await getExamList()
+    if (res.success) {
+      examOptions.value = res.data.map((exam: any) => ({
+        value: exam.examId,
+        label: exam.title
+      }))
+    } else {
+      ElMessage.error('获取考试选项失败')
+    }
+  } catch (error) {
+    console.error('获取考试选项出错:', error)
+    ElMessage.error('获取考试选项出错')
+  }
 }
 
 // 获取成绩列表
-const fetchScoreList = () => {
+const fetchScoreList = async () => {
   loading.value = true
-  // 这里应该调用API获取成绩列表
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const mockScores = [
-      { scoreId: 1, userId: 2, userName: 'user1', examId: 1, examTitle: '英语四级词汇测试', score: 85, totalScore: 100, status: 1, submitTime: '2023-05-01 10:30:00' },
-      { scoreId: 2, userId: 3, userName: 'user2', examId: 1, examTitle: '英语四级词汇测试', score: 55, totalScore: 100, status: 0, submitTime: '2023-05-01 11:20:00' },
-      { scoreId: 3, userId: 4, userName: 'user3', examId: 2, examTitle: '英语六级词汇测试', score: 90, totalScore: 100, status: 1, submitTime: '2023-05-02 09:15:00' },
-      { scoreId: 4, userId: 2, userName: 'user1', examId: 3, examTitle: '雅思词汇测试', score: 0, totalScore: 150, status: 2, submitTime: '2023-05-03 14:45:00' }
-    ]
-    
-    // 根据搜索条件过滤
-    let filteredScores = [...mockScores]
+  try {
+    const params: any = {
+      page: currentPage.value,
+      size: pageSize.value
+    }
+
+    // 添加筛选条件
     if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredScores = filteredScores.filter(score => 
-        score.userName.toLowerCase().includes(query) || 
-        score.examTitle.toLowerCase().includes(query)
-      )
+      params.query = searchQuery.value
     }
-    
+
     if (examFilter.value !== '') {
-      filteredScores = filteredScores.filter(score => score.examId === examFilter.value)
+      params.examId = examFilter.value
     }
-    
+
     if (statusFilter.value !== '') {
-      filteredScores = filteredScores.filter(score => score.status === statusFilter.value)
+      params.status = statusFilter.value
     }
-    
-    total.value = filteredScores.length
-    scoreList.value = filteredScores
+
+    const res = await getScoreList(params)
+    if (res.success) {
+      scoreList.value = res.data.records
+      total.value = res.data.total
+    } else {
+      ElMessage.error('获取成绩列表失败')
+    }
+  } catch (error) {
+    console.error('获取成绩列表出错:', error)
+    ElMessage.error('获取成绩列表出错')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 搜索
@@ -295,22 +311,45 @@ const handleCurrentChange = (val: number) => {
 }
 
 // 查看详情
-const handleViewDetail = (row: any) => {
+const handleViewDetail = async (row: any) => {
   Object.assign(detailScore, row)
-  
-  // 获取答题详情
-  // 这里应该调用API获取答题详情
-  // 暂时使用模拟数据
-  const mockAnswers = [
-    { questionId: 1, orderNum: 1, questionType: 1, questionContent: 'What is the capital of France?', userAnswer: 'A', correctAnswer: 'A', score: 5, isCorrect: true },
-    { questionId: 2, orderNum: 2, questionType: 2, questionContent: 'Which of the following are mammals?', userAnswer: 'A,C', correctAnswer: 'A,C,D', score: 5, isCorrect: false },
-    { questionId: 3, orderNum: 3, questionType: 3, questionContent: 'The Earth is flat.', userAnswer: 'F', correctAnswer: 'F', score: 5, isCorrect: true },
-    { questionId: 4, orderNum: 4, questionType: 4, questionContent: 'The largest planet in our solar system is _______.', userAnswer: 'Jupiter', correctAnswer: 'Jupiter', score: 5, isCorrect: true },
-    { questionId: 5, orderNum: 5, questionType: 5, questionContent: 'Explain the water cycle.', userAnswer: 'The water cycle is the process where water moves around the Earth.', correctAnswer: 'The water cycle is the continuous movement of water within the Earth and atmosphere. It includes processes like evaporation, condensation, precipitation, etc.', score: 10, isCorrect: false }
-  ]
-  
-  detailAnswers.value = mockAnswers
-  dialogVisible.value = true
+
+  try {
+    const res = await getScoreDetail(row.scoreId)
+    if (res.success) {
+      // 更新详情数据
+      Object.assign(detailScore, res.data.score)
+      detailAnswers.value = res.data.answers
+      dialogVisible.value = true
+    } else {
+      ElMessage.error('获取成绩详情失败')
+    }
+  } catch (error) {
+    console.error('获取成绩详情出错:', error)
+    ElMessage.error('获取成绩详情出错')
+  }
+}
+
+// 处理分数变更
+const handleScoreChange = async (row: any) => {
+  try {
+    const data = {
+      score: row.score
+    }
+
+    const res = await updateEssayScore(detailScore.scoreId, row.questionId, data)
+    if (res.success) {
+      ElMessage.success('评分更新成功')
+      // 更新总分
+      const totalScore = detailAnswers.value.reduce((sum, item) => sum + item.score, 0)
+      detailScore.score = totalScore
+    } else {
+      ElMessage.error('评分更新失败')
+    }
+  } catch (error) {
+    console.error('更新评分出错:', error)
+    ElMessage.error('更新评分出错')
+  }
 }
 
 // 初始化
