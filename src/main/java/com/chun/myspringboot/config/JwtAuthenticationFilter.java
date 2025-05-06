@@ -93,6 +93,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 requestURI.startsWith("/api/users/admin/login") ||
                 requestURI.startsWith("/api/users/register") ||
                 requestURI.startsWith("/api/users/activate") ||
+                // 音频文件路径，不需要身份认证
+                requestURI.startsWith("/api/files/audio/") ||
                 // Swagger相关路径
                 requestURI.equals("/swagger-ui.html") ||
                 requestURI.startsWith("/swagger-resources") ||

@@ -157,7 +157,7 @@
           </el-upload>
           <div v-if="listeningForm.path" class="audio-preview">
             <p>当前音频: {{ listeningForm.path }}</p>
-            <audio v-if="listeningForm.path.startsWith('/')" controls :src="`/api/files/audio/${listeningForm.path}`"></audio>
+            <audio controls :src="`/api/files/audio/${listeningForm.path}`"></audio>
           </div>
           <div v-if="listeningForm.audioFile" class="audio-preview">
             <p>已选择新文件: {{ listeningForm.audioFile.name }}</p>

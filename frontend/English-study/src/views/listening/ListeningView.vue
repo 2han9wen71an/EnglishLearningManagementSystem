@@ -176,6 +176,7 @@ const viewListen = (listen: any) => {
   userAnswers.value = {}
 
   // 设置音频源
+  // 音频文件公开访问，不需要身份验证
   audioSrc.value = `/api/files/audio/${listen.path}`
 
   // 如果有题目，设置总分
