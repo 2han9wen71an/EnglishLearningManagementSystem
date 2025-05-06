@@ -1,6 +1,8 @@
 package com.chun.myspringboot.controller.api;
 
 import com.chun.myspringboot.common.ApiResponse;
+import com.chun.myspringboot.pojo.DialogueContent;
+import com.chun.myspringboot.pojo.DialogueHistory;
 import com.chun.myspringboot.pojo.DialogueScenario;
 import com.chun.myspringboot.service.DeepSeekService;
 import com.chun.myspringboot.service.Impl.DialogueContentServiceImpl;
@@ -69,7 +71,10 @@ public class DialogueApiController {
     public ResponseEntity<ApiResponse<Map<String, String>>> processDialogue(
             @RequestParam Integer scenarioId,
             @RequestParam String userInput,
-            @RequestParam(required = false, defaultValue = "true") Boolean useAiMode) {
+            @RequestParam(required = false, defaultValue = "true") Boolean useAiMode,
+            @RequestParam(required = false) String initialMessage,
+            @RequestParam(required = false) String initialPrompt,
+            @RequestParam(required = false) String sessionId) {
 
         Map<String, String> response = new HashMap<>();
 
@@ -82,21 +87,97 @@ public class DialogueApiController {
             }
 
             if (useAiMode) {
-                // 使用AI模式生成回复
-                String aiResponse = deepSeekService.generateDialogueResponse(
-                        scenario.getScenarioName(),
-                        scenario.getScenarioDescription(),
-                        null, // 这里应该传入对话历史，但为简化处理暂时传null
+                // AI模式 - 使用DeepSeek API
+
+                // 创建对话历史对象
+                DialogueHistory dialogueHistory = new DialogueHistory();
+                dialogueHistory.setScenarioId(scenarioId);
+                dialogueHistory.setScenarioName(scenario.getScenarioName());
+                dialogueHistory.setScenarioDescription(scenario.getScenarioDescription());
+
+                // 如果有初始消息，先添加到对话历史
+                if (initialMessage != null && !initialMessage.isEmpty()) {
+                    dialogueHistory.addMessage(initialMessage);
+                }
+
+                // 添加用户输入到对话历史
+                dialogueHistory.addMessage(userInput);
+
+                // 获取AI回复
+                String aiReply = deepSeekService.generateDialogueResponse(
+                        dialogueHistory.getScenarioName(),
+                        dialogueHistory.getScenarioDescription(),
+                        dialogueHistory.getMessages(),
                         userInput
                 );
 
-                response.put("content", aiResponse);
-                response.put("prompt", "请继续对话...");
+                // 添加AI回复到对话历史
+                dialogueHistory.addMessage(aiReply);
+
+                // 获取下一个提示（如果有）
+                String nextPrompt = "";
+                // 尝试从数据库获取下一个提示
+                Integer currentStep = 1; // 默认从第一步开始
+
+                // 如果传入了sessionId，尝试从会话中获取当前步骤
+                if (sessionId != null && !sessionId.isEmpty()) {
+                    // 这里可以实现从Redis或其他会话存储中获取currentStep
+                    // 暂时使用默认值
+                }
+
+                DialogueContent nextContent = dialogueContentService.queryContentByScenarioIdAndOrderNum(scenarioId, currentStep + 3);
+                if (nextContent != null) {
+                    nextPrompt = nextContent.getPrompt();
+                    // 更新当前步骤
+                    currentStep += 2;
+
+                    // 如果传入了sessionId，保存更新后的步骤
+                    if (sessionId != null && !sessionId.isEmpty()) {
+                        // 这里可以实现保存到Redis或其他会话存储
+                    }
+                } else if (initialPrompt != null && !initialPrompt.isEmpty()) {
+                    // 如果没有找到下一个提示，但有初始提示，则使用初始提示
+                    nextPrompt = initialPrompt;
+                } else {
+                    // 默认提示
+                    nextPrompt = "Please continue the conversation...";
+                }
+
+                // 构建响应
+                response.put("content", aiReply);
+                response.put("prompt", nextPrompt);
+
             } else {
-                // 使用预设对话内容
-                // 由于没有现成的方法，我们创建一个简单的响应
-                response.put("content", "这是一个预设的回复。在实际实现中，这里应该返回根据用户输入匹配的下一条对话内容。");
-                response.put("prompt", "请继续对话...");
+                // 预设对话模式
+                // 获取当前用户应该回复的对话内容
+                DialogueContent userDialogue = dialogueContentService.queryContentByScenarioIdAndOrderNum(scenarioId, 1);
+
+                if (userDialogue != null) {
+                    // 更新用户输入
+                    userDialogue.setContent(userInput);
+                    dialogueContentService.updateContent(userDialogue);
+
+                    // 获取下一条AI回复
+                    DialogueContent aiResponse = dialogueContentService.queryContentByScenarioIdAndOrderNum(scenarioId, 2);
+
+                    // 获取下一个提示（如果有）
+                    String nextPrompt = "";
+                    DialogueContent nextContent = dialogueContentService.queryContentByScenarioIdAndOrderNum(scenarioId, 3);
+                    if (nextContent != null) {
+                        nextPrompt = nextContent.getPrompt();
+                    }
+
+                    // 构建响应
+                    if (aiResponse != null) {
+                        response.put("content", aiResponse.getContent());
+                    } else {
+                        response.put("content", "没有找到对应的AI回复内容");
+                    }
+                    response.put("prompt", nextPrompt);
+                } else {
+                    response.put("content", "没有找到对应的对话内容");
+                    response.put("prompt", "");
+                }
             }
 
             return ResponseEntity.ok(ApiResponse.success(response));
@@ -167,6 +248,111 @@ public class DialogueApiController {
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("删除失败，请稍后重试"));
+        }
+    }
+
+    /**
+     * 重置对话
+     */
+    @PostMapping("/reset")
+    public ResponseEntity<ApiResponse<Map<String, String>>> resetDialogue(
+            @RequestParam Integer scenarioId,
+            @RequestParam(required = false) String initialMessage,
+            @RequestParam(required = false) String initialPrompt,
+            @RequestParam(required = false) String sessionId) {
+
+        Map<String, String> response = new HashMap<>();
+
+        try {
+            // 获取场景信息
+            DialogueScenario scenario = dialogueScenarioService.queryScenarioById(scenarioId);
+            if (scenario == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("对话场景不存在"));
+            }
+
+            // 创建新的对话历史
+            DialogueHistory dialogueHistory = new DialogueHistory();
+            dialogueHistory.setScenarioId(scenarioId);
+            dialogueHistory.setScenarioName(scenario.getScenarioName());
+            dialogueHistory.setScenarioDescription(scenario.getScenarioDescription());
+
+            // 处理初始消息
+            String contentToReturn = "";
+
+            // 优先使用前端传来的初始消息
+            if (initialMessage != null && !initialMessage.isEmpty()) {
+                contentToReturn = initialMessage;
+                dialogueHistory.addMessage(initialMessage);
+            } else {
+                // 如果前端没有传递初始消息，尝试从数据库获取
+                DialogueContent dbInitialMessage = dialogueContentService.queryContentByScenarioIdAndOrderNum(scenarioId, 1);
+                if (dbInitialMessage != null) {
+                    contentToReturn = dbInitialMessage.getContent();
+                    dialogueHistory.addMessage(contentToReturn);
+                }
+            }
+
+            // 处理提示信息
+            String promptToReturn = "";
+
+            // 优先使用前端传来的提示
+            if (initialPrompt != null && !initialPrompt.isEmpty()) {
+                promptToReturn = initialPrompt;
+            } else {
+                // 如果前端没有传递提示，尝试从数据库获取
+                // 重置当前对话步骤为1
+                Integer currentStep = 1;
+
+                // 如果传入了sessionId，保存步骤
+                if (sessionId != null && !sessionId.isEmpty()) {
+                    // 这里可以实现保存到Redis或其他会话存储
+                }
+
+                // 获取第二条内容的提示（如果有）
+                DialogueContent nextContent = dialogueContentService.queryContentByScenarioIdAndOrderNum(scenarioId, 2);
+                if (nextContent != null) {
+                    promptToReturn = nextContent.getPrompt();
+                } else {
+                    promptToReturn = "Please start the conversation...";
+                }
+            }
+
+            // 构建响应
+            response.put("content", contentToReturn);
+            response.put("prompt", promptToReturn);
+
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("重置对话失败：" + e.getMessage()));
+        }
+    }
+
+    /**
+     * 切换AI模式
+     */
+    @PostMapping("/toggle-ai-mode")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> toggleAiMode(
+            @RequestParam(required = false) Boolean currentMode,
+            @RequestParam(required = false) String sessionId) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // 切换模式
+            Boolean newMode = (currentMode == null || !currentMode);
+
+            // 构建响应
+            response.put("useAiMode", newMode);
+            response.put("message", newMode ? "已切换到AI对话模式" : "已切换到预设对话模式");
+
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("切换AI模式失败：" + e.getMessage()));
         }
     }
 }

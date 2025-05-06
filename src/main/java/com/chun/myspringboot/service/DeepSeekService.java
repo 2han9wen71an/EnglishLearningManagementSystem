@@ -60,15 +60,19 @@ public class DeepSeekService {
             ObjectNode systemMessage = objectMapper.createObjectNode();
             systemMessage.put("role", "system");
             systemMessage.put("content", "You are a helpful English conversation partner in the following scenario: " + scenarioDescription +
-                    ". Respond naturally as if you are in this scenario. Keep responses concise and appropriate for the context.");
+                    ". Respond naturally as if you are in this scenario. Keep responses concise and appropriate for the context. " +
+                    "ALWAYS respond in English only, even if the user speaks in another language. " +
+                    "Your purpose is to help the user practice English conversation skills.");
             messagesArray.add(systemMessage);
 
-            // 添加历史对话
-            for (int i = 0; i < messages.size(); i++) {
-                ObjectNode message = objectMapper.createObjectNode();
-                message.put("role", i % 2 == 0 ? "assistant" : "user");
-                message.put("content", messages.get(i));
-                messagesArray.add(message);
+            // 添加历史对话（如果有）
+            if (messages != null && !messages.isEmpty()) {
+                for (int i = 0; i < messages.size(); i++) {
+                    ObjectNode message = objectMapper.createObjectNode();
+                    message.put("role", i % 2 == 0 ? "assistant" : "user");
+                    message.put("content", messages.get(i));
+                    messagesArray.add(message);
+                }
             }
 
             // 添加用户当前输入
@@ -125,16 +129,20 @@ public class DeepSeekService {
      */
     private String generateMockResponse(String scenarioDescription, String userPrompt) {
         // 根据场景和用户输入生成简单的模拟回复
-        if (scenarioDescription.contains("机场")) {
+        if (scenarioDescription.toLowerCase().contains("airport") || scenarioDescription.contains("机场")) {
             return "I understand you need assistance with your flight. Let me help you with the check-in process. Could you please show me your passport and booking confirmation?";
-        } else if (scenarioDescription.contains("酒店")) {
+        } else if (scenarioDescription.toLowerCase().contains("hotel") || scenarioDescription.contains("酒店")) {
             return "Welcome to our hotel! I'd be happy to assist with your reservation. We have several room types available. Would you prefer a standard room or a suite?";
-        } else if (scenarioDescription.contains("餐厅")) {
+        } else if (scenarioDescription.toLowerCase().contains("restaurant") || scenarioDescription.contains("餐厅")) {
             return "Thank you for your order. Our chef will prepare it right away. Would you like to order any drinks while you wait?";
-        } else if (scenarioDescription.contains("购物")) {
+        } else if (scenarioDescription.toLowerCase().contains("shopping") || scenarioDescription.contains("购物")) {
             return "We have that item in stock. Would you like to try it on? We also have it in different colors if you're interested.";
-        } else if (scenarioDescription.contains("医院")) {
+        } else if (scenarioDescription.toLowerCase().contains("hospital") || scenarioDescription.contains("医院")) {
             return "I understand your symptoms. Based on what you've told me, I recommend we run some tests to get a better understanding of your condition.";
+        } else if (scenarioDescription.toLowerCase().contains("interview") || scenarioDescription.contains("面试")) {
+            return "Thank you for coming in today. Could you tell me a bit about your previous work experience and why you're interested in this position?";
+        } else if (scenarioDescription.toLowerCase().contains("business") || scenarioDescription.contains("商务")) {
+            return "I've reviewed the project details you sent. I think we should focus on improving the marketing strategy first. What are your thoughts on this approach?";
         } else {
             return "I understand what you're saying. Could you please tell me more about what you need help with?";
         }
