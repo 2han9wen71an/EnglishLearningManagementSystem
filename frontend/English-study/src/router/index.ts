@@ -212,7 +212,7 @@ const router = createRouter({
 // 全局前置守卫
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - 英语学习管理系统` : '英语学习管理系统'
+  document.title = to.meta.title ? `${to.meta.title} - 英语知识应用网站系统` : '英语知识应用网站系统'
 
   // 检查是否需要登录权限
   if (to.meta.requiresAuth) {

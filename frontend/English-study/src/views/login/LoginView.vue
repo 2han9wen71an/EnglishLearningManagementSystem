@@ -4,7 +4,7 @@
     <div class="login-content">
       <div class="login-box">
         <div class="login-header">
-          <h2>英语学习管理系统</h2>
+          <h2>英语知识应用网站系统</h2>
           <p>登录您的账号</p>
         </div>
         <el-form

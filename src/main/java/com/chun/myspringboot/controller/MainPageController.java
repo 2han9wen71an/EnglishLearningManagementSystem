@@ -32,7 +32,7 @@ public class MainPageController {
             // 如果没有公告，创建一个默认公告
             if (notice == null) {
                 notice = new Notice();
-                notice.setTitle("欢迎使用英语学习管理系统");
+                notice.setTitle("欢迎使用英语知识应用网站系统");
                 notice.setContent("这是一个默认公告。管理员尚未发布任何公告。");
                 notice.setCreatTime(new Date());
             }

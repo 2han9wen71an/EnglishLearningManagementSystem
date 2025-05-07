@@ -16,10 +16,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/notices")
 public class NoticeApiController {
-    
+
     @Autowired
     private NoticeServiceImpl noticeService;
-    
+
     /**
      * 获取所有公告
      */
@@ -28,7 +28,7 @@ public class NoticeApiController {
         List<Notice> notices = noticeService.queryAllNotice();
         return ResponseEntity.ok(ApiResponse.success(notices));
     }
-    
+
     /**
      * 获取最新公告
      */
@@ -40,14 +40,14 @@ public class NoticeApiController {
         } else {
             // 如果没有公告，创建一个默认公告
             Notice defaultNotice = new Notice();
-            defaultNotice.setTitle("欢迎使用英语学习管理系统");
+            defaultNotice.setTitle("欢迎使用英语知识应用网站系统");
             defaultNotice.setContent("这是一个默认公告。管理员尚未发布任何公告。");
             defaultNotice.setCreatTime(new java.util.Date());
-            
+
             return ResponseEntity.ok(ApiResponse.success(defaultNotice));
         }
     }
-    
+
     /**
      * 获取公告详情
      */
@@ -61,7 +61,7 @@ public class NoticeApiController {
                     .body(ApiResponse.error("公告不存在"));
         }
     }
-    
+
     /**
      * 管理员：添加公告
      */
@@ -71,7 +71,7 @@ public class NoticeApiController {
         if (notice.getCreatTime() == null) {
             notice.setCreatTime(new java.util.Date());
         }
-        
+
         // 这里需要添加一个新的方法来添加公告
         // 假设已经存在这个方法
         int result = noticeService.addNotice(notice);
@@ -83,7 +83,7 @@ public class NoticeApiController {
                     .body(ApiResponse.error("添加失败，请稍后重试"));
         }
     }
-    
+
     /**
      * 管理员：更新公告
      */
@@ -94,14 +94,14 @@ public class NoticeApiController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error("公告ID不匹配"));
         }
-        
+
         // 检查公告是否存在
         Notice existingNotice = noticeService.queryNoticeById(noticeId);
         if (existingNotice == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error("公告不存在"));
         }
-        
+
         // 这里需要添加一个新的方法来更新公告
         // 假设已经存在这个方法
         int result = noticeService.updateNotice(notice);
@@ -112,7 +112,7 @@ public class NoticeApiController {
                     .body(ApiResponse.error("更新失败，请稍后重试"));
         }
     }
-    
+
     /**
      * 管理员：删除公告
      */
@@ -124,7 +124,7 @@ public class NoticeApiController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error("公告不存在"));
         }
-        
+
         // 这里需要添加一个新的方法来删除公告
         // 假设已经存在这个方法
         int result = noticeService.deleteNotice(noticeId);

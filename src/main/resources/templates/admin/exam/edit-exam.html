@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>编辑考试 - 英语学习管理系统</title>
+    <title>编辑考试 - 英语知识应用网站系统</title>
     <meta name="description" content="编辑考试">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -46,32 +46,32 @@
                             <div class="card-body">
                                 <form th:action="@{/admin/editExam}" method="post">
                                     <input type="hidden" name="examId" th:value="${exam.examId}">
-                                    
+
                                     <div class="form-group">
                                         <label for="title">考试标题</label>
                                         <input type="text" class="form-control" id="title" name="title" th:value="${exam.title}" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="description">考试描述</label>
                                         <textarea class="form-control" id="description" name="description" rows="3" th:text="${exam.description}"></textarea>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="duration">考试时长(分钟)</label>
                                         <input type="number" class="form-control" id="duration" name="duration" min="1" th:value="${exam.duration}" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="totalScore">总分</label>
                                         <input type="number" class="form-control" id="totalScore" name="totalScore" min="1" th:value="${exam.totalScore}" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="passScore">及格分数</label>
                                         <input type="number" class="form-control" id="passScore" name="passScore" min="1" th:value="${exam.passScore}" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="gradeId">等级</label>
                                         <select class="form-control" id="gradeId" name="gradeId">
@@ -79,7 +79,7 @@
                                             <option th:each="grade : ${grades}" th:value="${grade.gradeId}" th:text="${grade.gradeName}" th:selected="${grade.gradeId == exam.gradeId}">四级</option>
                                         </select>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="status">状态</label>
                                         <select class="form-control" id="status" name="status" required>
@@ -87,7 +87,7 @@
                                             <option value="0" th:selected="${exam.status == 0}">禁用</option>
                                         </select>
                                     </div>
-                                    
+
                                     <button type="submit" class="btn btn-primary">保存考试</button>
                                     <a th:href="@{/admin/viewExams}" class="btn btn-secondary">取消</a>
                                 </form>

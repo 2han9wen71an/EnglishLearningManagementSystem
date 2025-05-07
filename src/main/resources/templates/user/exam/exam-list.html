@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>考试列表 - 英语学习管理系统</title>
+    <title>考试列表 - 英语知识应用网站系统</title>
     <meta name="description" content="考试列表">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -52,7 +52,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mt-4">
                                     <div class="col-md-6 col-lg-4 mb-4" th:each="exam : ${exams}">
                                         <div class="card">
@@ -80,7 +80,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 如果没有考试 -->
                                 <div class="row" th:if="${#lists.isEmpty(exams)}">
                                     <div class="col-12">

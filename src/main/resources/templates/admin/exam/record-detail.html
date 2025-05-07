@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>考试记录详情 - 英语学习管理系统</title>
+    <title>考试记录详情 - 英语知识应用网站系统</title>
     <meta name="description" content="考试记录详情">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -20,7 +20,7 @@
     <link rel="stylesheet" th:href="@{/static/css/style.css}">
 
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800' rel='stylesheet' type='text/css'>
-    
+
     <style>
         .question-card {
             margin-bottom: 20px;
@@ -169,11 +169,11 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 答题详情 -->
                                 <div class="mt-4" th:if="${record.status > 0}">
                                     <h5>答题详情</h5>
-                                    
+
                                     <div th:each="answer, stat : ${answers}" class="question-card">
                                         <div th:class="'question-header ' + (${answer.isCorrect == 1 ? 'bg-success text-white' : 'bg-danger text-white'})">
                                             <strong>第 <span th:text="${stat.index + 1}">1</span> 题</strong>
@@ -181,7 +181,7 @@
                                         </div>
                                         <div class="question-body">
                                             <p th:text="${answer.questionContent}">题目内容</p>
-                                            
+
                                             <!-- 单选题 -->
                                             <div th:if="${answer.questionType == 1}" class="options">
                                                 <div class="option-group" th:attr="data-options=${answer.options}, data-correct=${answer.correctAnswer}, data-user=${answer.userAnswer}" th:id="'options-' + ${answer.questionId}">
@@ -195,21 +195,21 @@
                                                             var optionsJson = container.getAttribute('data-options');
                                                             var correctAnswer = container.getAttribute('data-correct');
                                                             var userAnswer = container.getAttribute('data-user');
-                                                            
+
                                                             // 解析JSON
                                                             var optionsMap = JSON.parse(optionsJson);
                                                             // 清空容器
                                                             container.innerHTML = '';
-                                                            
+
                                                             // 遍历选项并创建HTML元素
                                                             for (var key in optionsMap) {
                                                                 if (optionsMap.hasOwnProperty(key)) {
                                                                     var optionItem = document.createElement('div');
                                                                     optionItem.className = 'option-item';
-                                                                    
+
                                                                     var optionLabel = document.createElement('div');
                                                                     var labelClasses = ['option-label'];
-                                                                    
+
                                                                     // 添加样式类
                                                                     if (key === correctAnswer) {
                                                                         labelClasses.push('option-correct');
@@ -220,14 +220,14 @@
                                                                     if (key === userAnswer) {
                                                                         labelClasses.push('option-selected');
                                                                     }
-                                                                    
+
                                                                     optionLabel.className = labelClasses.join(' ');
-                                                                    
+
                                                                     // 选项内容
                                                                     var contentSpan = document.createElement('span');
                                                                     contentSpan.textContent = key + '. ' + optionsMap[key];
                                                                     optionLabel.appendChild(contentSpan);
-                                                                    
+
                                                                     // 添加标记
                                                                     if (key === correctAnswer) {
                                                                         var correctSpan = document.createElement('span');
@@ -235,21 +235,21 @@
                                                                         correctSpan.innerHTML = '<i class="fa fa-check"></i> 正确答案';
                                                                         optionLabel.appendChild(correctSpan);
                                                                     }
-                                                                    
+
                                                                     if (key === userAnswer && key !== correctAnswer) {
                                                                         var incorrectSpan = document.createElement('span');
                                                                         incorrectSpan.className = 'float-right text-danger';
                                                                         incorrectSpan.innerHTML = '<i class="fa fa-times"></i> 用户答案';
                                                                         optionLabel.appendChild(incorrectSpan);
                                                                     }
-                                                                    
+
                                                                     if (key === userAnswer && key === correctAnswer) {
                                                                         var correctUserSpan = document.createElement('span');
                                                                         correctUserSpan.className = 'float-right text-success';
                                                                         correctUserSpan.innerHTML = '<i class="fa fa-check"></i> 用户答案';
                                                                         optionLabel.appendChild(correctUserSpan);
                                                                     }
-                                                                    
+
                                                                     optionItem.appendChild(optionLabel);
                                                                     container.appendChild(optionItem);
                                                                 }
@@ -260,7 +260,7 @@
                                                     });
                                                 </script>
                                             </div>
-                                            
+
                                             <!-- 解析 -->
                                             <div class="analysis-box" th:if="${answer.analysis != null && !answer.analysis.isEmpty()}">
                                                 <h6><i class="fa fa-info-circle"></i> 解析</h6>
@@ -269,7 +269,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 考试进行中 -->
                                 <div class="alert alert-warning" th:if="${record.status == 0}">
                                     <h4 class="alert-heading">考试进行中</h4>
@@ -278,7 +278,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4" th:if="${record.status > 0}">
                         <div class="card result-summary">
                             <div class="card-header">
@@ -288,16 +288,16 @@
                                 <div th:class="'score-circle ' + (${record.score >= record.passScore ? 'score-pass' : 'score-fail'})">
                                     <span th:text="${record.score}">85</span>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <h5 th:text="${record.score >= record.passScore ? '通过考试' : '未通过考试'}">通过考试</h5>
                                     <p>总分：<span th:text="${exam.totalScore}">100</span> 分，及格分：<span th:text="${exam.passScore}">60</span> 分</p>
                                 </div>
-                                
+
                                 <div class="progress mb-3">
                                     <div class="progress-bar" role="progressbar" th:style="'width: ' + ${record.score / exam.totalScore * 100} + '%'" th:text="${record.score + '/' + exam.totalScore}">85/100</div>
                                 </div>
-                                
+
                                 <div class="mt-3">
                                     <a th:href="@{'/admin/viewExamRecords'}" class="btn btn-primary">返回记录列表</a>
                                     <a th:href="@{'/admin/viewExamQuestions/' + ${exam.examId}}" class="btn btn-outline-secondary">查看考试题目</a>

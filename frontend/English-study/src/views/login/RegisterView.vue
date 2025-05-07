@@ -4,7 +4,7 @@
     <div class="register-content">
       <div class="register-box">
         <div class="register-header">
-          <h2>英语学习管理系统</h2>
+          <h2>英语知识应用网站系统</h2>
           <p>创建新账号</p>
         </div>
         <el-form

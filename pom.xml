@@ -12,7 +12,7 @@
     <artifactId>myspringboot</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>myspringboot</name>
-    <description>Demo project for Spring Boot</description>
+    <description>英语知识应用网站系统</description>
 
     <properties>
         <java.version>1.8</java.version>

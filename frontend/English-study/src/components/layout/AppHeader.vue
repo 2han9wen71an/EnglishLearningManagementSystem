@@ -2,7 +2,7 @@
   <div class="app-header">
     <div class="logo">
       <img src="@/assets/logo.svg" alt="Logo" class="logo-img" />
-      <h1 class="logo-text">英语学习管理系统</h1>
+      <h1 class="logo-text">英语知识应用网站系统</h1>
     </div>
     <div class="header-right">
       <el-dropdown trigger="click" @command="handleCommand">

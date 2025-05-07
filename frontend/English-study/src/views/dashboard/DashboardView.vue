@@ -4,7 +4,7 @@
       <el-col :span="24">
         <el-card class="welcome-card">
           <div class="welcome-content">
-            <h2>欢迎使用英语学习管理系统</h2>
+            <h2>欢迎使用英语知识应用网站系统</h2>
             <p>{{ currentTime }}</p>
           </div>
         </el-card>

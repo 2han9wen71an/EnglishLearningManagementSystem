@@ -1,6 +1,6 @@
 <template>
   <div class="admin-footer">
-    <p>© {{ currentYear }} 英语学习管理系统 - 管理后台</p>
+    <p>© {{ currentYear }} 英语知识应用网站系统 - 管理后台</p>
   </div>
 </template>
 

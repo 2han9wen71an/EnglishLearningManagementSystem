@@ -37,8 +37,8 @@ public class SwaggerConfig {
 
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-                .title("英语学习管理系统API文档")
-                .description("英语学习管理系统RESTful API接口文档")
+                .title("英语知识应用网站系统API文档")
+                .description("英语知识应用网站系统RESTful API接口文档")
                 .version("1.0.0")
                 .build();
     }
