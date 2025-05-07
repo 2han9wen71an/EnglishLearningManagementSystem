@@ -66,10 +66,11 @@ export function submitAnswer(data: {
 }
 
 // 提交考试
-export function submitExam(recordId: number) {
+export function submitExam(recordId: number, data?: any) {
   return request({
     url: `/exams/records/${recordId}/submit`,
-    method: 'post'
+    method: 'post',
+    data
   })
 }
 
@@ -119,6 +120,14 @@ export function deleteExamQuestion(examId: number, questionId: number) {
 export function getExamGradeList() {
   return request({
     url: '/exams/grades',
+    method: 'get'
+  })
+}
+
+// 获取用户考试记录列表
+export function getUserExamRecords(userId: number) {
+  return request({
+    url: `/exams/records/user/${userId}`,
     method: 'get'
   })
 }

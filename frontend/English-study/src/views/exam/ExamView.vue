@@ -1,7 +1,50 @@
 <template>
   <div class="exam-container">
+    <!-- 历史考试页面 -->
+    <div v-if="showHistory">
+      <el-card class="exam-history-card">
+        <template #header>
+          <div class="card-header">
+            <span>历史考试</span>
+            <el-button @click="backToList">返回列表</el-button>
+          </div>
+        </template>
+        <div v-if="loadingHistory" class="loading-container">
+          <el-skeleton :rows="5" animated />
+        </div>
+        <div v-else-if="examHistory.length === 0" class="empty-container">
+          <el-empty description="暂无历史考试记录" />
+        </div>
+        <div v-else class="history-list">
+          <el-table :data="examHistory" style="width: 100%">
+            <el-table-column prop="examTitle" label="考试名称" min-width="200" />
+            <el-table-column prop="score" label="得分" width="100" />
+            <el-table-column prop="startTime" label="考试时间" width="180">
+              <template #default="scope">
+                {{ formatDate(scope.row.startTime) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="scope">
+                <el-tag :type="scope.row.status === 1 ? 'warning' : 'success'">
+                  {{ scope.row.status === 1 ? '待批改' : '已批改' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="150">
+              <template #default="scope">
+                <el-button type="primary" size="small" @click="viewExamResult(scope.row)">
+                  查看结果
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-card>
+    </div>
+
     <!-- 考试列表页面 -->
-    <div v-if="!currentExam && !examRecord">
+    <div v-else-if="!currentExam && !examRecord">
       <el-card class="exam-list-card">
         <template #header>
           <div class="card-header">
@@ -117,7 +160,7 @@
 
               <!-- 选择题 -->
               <div v-if="currentQuestion.type === 0 || currentQuestion.questionType === 1" class="options-container">
-                <el-radio-group v-model="userAnswers[currentQuestion.questionId]">
+                <el-radio-group v-model="userAnswers[currentQuestion.questionId]" @change="saveCurrentAnswer">
                   <el-radio
                     v-for="option in parseOptions(currentQuestion.options)"
                     :key="option.key"
@@ -143,7 +186,7 @@
 
               <!-- 判断题 -->
               <div v-else-if="currentQuestion.questionType === 3" class="options-container">
-                <el-radio-group v-model="userAnswers[currentQuestion.questionId]">
+                <el-radio-group v-model="userAnswers[currentQuestion.questionId]" @change="saveCurrentAnswer">
                   <el-radio label="T">正确</el-radio>
                   <el-radio label="F">错误</el-radio>
                 </el-radio-group>
@@ -154,6 +197,7 @@
                 <el-input
                   v-model="userAnswers[currentQuestion.questionId]"
                   placeholder="请输入答案"
+                  @blur="saveCurrentAnswer"
                 />
               </div>
 
@@ -164,6 +208,7 @@
                   type="textarea"
                   :rows="5"
                   placeholder="请输入答案"
+                  @blur="saveCurrentAnswer"
                 />
               </div>
 
@@ -196,7 +241,7 @@
     </div>
 
     <!-- 考试结果页面 -->
-    <div v-else-if="examRecord && examRecord.status === 1">
+    <div v-else-if="examRecord && (examRecord.status === 1 || examRecord.status === 2)">
       <el-card class="exam-result-card">
         <template #header>
           <div class="card-header">
@@ -222,7 +267,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">用时:</span>
-              <span class="info-value">{{ formatDuration(examRecord.duration) }}</span>
+              <span class="info-value">{{ calculateDuration(examRecord.startTime, examRecord.endTime) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">正确率:</span>
@@ -244,7 +289,7 @@
                 </el-tag>
               </div>
 
-              <div class="question-text">{{ question.content }}</div>
+              <div class="question-text">{{ question.content || question.questionContent }}</div>
 
               <div class="answer-comparison">
                 <div class="user-answer">
@@ -275,48 +320,12 @@
                 </div>
               </div>
 
-              <div v-if="question.explanation" class="answer-explanation">
+              <div v-if="question.explanation || question.analysis" class="answer-explanation">
                 <span class="explanation-label">解析:</span>
-                <span class="explanation-value">{{ question.explanation }}</span>
+                <span class="explanation-value">{{ question.explanation || question.analysis }}</span>
               </div>
             </div>
           </div>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 历史考试页面 -->
-    <div v-else-if="showHistory">
-      <el-card class="exam-history-card">
-        <template #header>
-          <div class="card-header">
-            <span>历史考试</span>
-            <el-button @click="backToList">返回列表</el-button>
-          </div>
-        </template>
-        <div v-if="loadingHistory" class="loading-container">
-          <el-skeleton :rows="5" animated />
-        </div>
-        <div v-else-if="examHistory.length === 0" class="empty-container">
-          <el-empty description="暂无历史考试记录" />
-        </div>
-        <div v-else class="history-list">
-          <el-table :data="examHistory" style="width: 100%">
-            <el-table-column prop="title" label="考试名称" min-width="200" />
-            <el-table-column prop="score" label="得分" width="100" />
-            <el-table-column prop="startTime" label="考试时间" width="180">
-              <template #default="scope">
-                {{ formatDate(scope.row.startTime) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="150">
-              <template #default="scope">
-                <el-button type="primary" size="small" @click="viewExamResult(scope.row)">
-                  查看结果
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
         </div>
       </el-card>
     </div>
@@ -326,8 +335,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import request from '@/utils/request'
 import { getUserId } from '@/utils/auth'
+import { getExamResult, getExamQuestionList, getExamList, getExamDetail, getUserExamRecords } from '@/api/exam'
+import { startExam as apiStartExam, submitExam as apiSubmitExam, submitAnswer } from '@/api/exam'
 
 // 数据
 const loading = ref(true)
@@ -350,10 +360,7 @@ const examHistory = ref<any[]>([])
 const fetchExams = async () => {
   loading.value = true
   try {
-    const response = await request({
-      url: '/exams',
-      method: 'get'
-    })
+    const response = await getExamList()
     exams.value = response.data || []
   } catch (error) {
     console.error('获取考试列表失败:', error)
@@ -376,15 +383,13 @@ const backToList = () => {
 
 const startExam = async () => {
   try {
-    const response = await request({
-      url: `/exams/${currentExam.value.examId}/start`,
-      method: 'post',
-      data: {
-        userId: getUserId()
-      }
-    })
+    const userId = getUserId()
+    if (!userId) {
+      throw new Error('用户ID不存在')
+    }
+    const response = await apiStartExam(currentExam.value.examId, parseInt(userId))
 
-    if (response.success) {
+    if (response && response.data) {
       examRecord.value = response.data
 
       // 获取考试题目
@@ -401,7 +406,7 @@ const startExam = async () => {
 
       ElMessage.success('考试开始')
     } else {
-      ElMessage.error(response.message || '开始考试失败')
+      ElMessage.error('开始考试失败，返回数据为空')
     }
   } catch (error) {
     console.error('开始考试失败:', error)
@@ -411,10 +416,7 @@ const startExam = async () => {
 
 const fetchQuestions = async () => {
   try {
-    const response = await request({
-      url: `/exams/${currentExam.value.examId}/questions`,
-      method: 'get'
-    })
+    const response = await getExamQuestionList(currentExam.value.examId)
     questions.value = response.data || []
     currentQuestionIndex.value = 0
   } catch (error) {
@@ -447,23 +449,49 @@ const formatTime = (seconds: number) => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-const switchQuestion = (index: number) => {
+// 保存当前题目的答案
+const saveCurrentAnswer = async () => {
+  if (currentQuestion.value && userAnswers[currentQuestion.value.questionId] && examRecord.value) {
+    try {
+      await submitAnswer({
+        recordId: examRecord.value.recordId,
+        questionId: currentQuestion.value.questionId,
+        userAnswer: userAnswers[currentQuestion.value.questionId]
+      })
+      console.log('保存答案成功:', currentQuestion.value.questionId, userAnswers[currentQuestion.value.questionId])
+    } catch (error) {
+      console.error('保存答案失败:', error)
+    }
+  }
+}
+
+const switchQuestion = async (index: number) => {
+  // 保存当前题目的答案
+  await saveCurrentAnswer()
+
+  // 切换到新题目
   currentQuestionIndex.value = index
 }
 
-const prevQuestion = () => {
+const prevQuestion = async () => {
+  // 保存当前题目的答案
+  await saveCurrentAnswer()
+
   if (currentQuestionIndex.value > 0) {
     currentQuestionIndex.value--
   }
 }
 
-const nextQuestion = () => {
+const nextQuestion = async () => {
+  // 保存当前题目的答案
+  await saveCurrentAnswer()
+
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++
   }
 }
 
-const parseOptions = (optionsStr: string) => {
+const parseOptions = (optionsStr: string): Array<{key: string, value: string}> => {
   if (!optionsStr) return []
 
   try {
@@ -473,7 +501,7 @@ const parseOptions = (optionsStr: string) => {
     // 需要转换为前端使用的 [{key: "A", value: "内容"}] 格式
     if (typeof options === 'object' && !Array.isArray(options)) {
       console.log('转换选项格式', options)
-      const result = []
+      const result: Array<{key: string, value: string}> = []
 
       // 遍历对象属性（A, B, C, D...）并按字母顺序排序
       Object.keys(options).sort().forEach(key => {
@@ -604,28 +632,19 @@ const submitExam = async () => {
       })
     }
 
-    const response = await request({
-      url: `/exams/records/${examRecord.value.recordId}/submit`,
-      method: 'post',
-      data: {
-        answers
-      }
-    })
+    const response = await apiSubmitExam(examRecord.value.recordId, { answers })
 
-    if (response.success) {
+    if (response && response.data) {
       clearInterval(timer.value as number)
       clearAnswersFromStorage()
 
       // 获取考试结果
-      const resultResponse = await request({
-        url: `/exams/records/${examRecord.value.recordId}`,
-        method: 'get'
-      })
+      const resultResponse = await getExamResult(examRecord.value.recordId)
       examRecord.value = resultResponse.data
 
       ElMessage.success('考试提交成功')
     } else {
-      ElMessage.error(response.message || '提交失败，请稍后重试')
+      ElMessage.error('提交失败，请稍后重试')
     }
   } catch (error) {
     console.error('提交考试失败:', error)
@@ -638,11 +657,19 @@ const viewExamHistory = async () => {
   showHistory.value = true
 
   try {
-    const response = await request({
-      url: `/exams/records/user/${getUserId()}`,
-      method: 'get'
-    })
+    const userId = getUserId()
+    if (!userId) {
+      throw new Error('用户ID不存在')
+    }
+    const response = await getUserExamRecords(parseInt(userId))
+    console.log('历史考试数据:', response)
     examHistory.value = response.data || []
+
+    if (examHistory.value.length === 0) {
+      ElMessage.info('暂无历史考试记录')
+    } else {
+      console.log('历史考试列表:', examHistory.value)
+    }
   } catch (error) {
     console.error('获取考试历史失败:', error)
     ElMessage.error('获取考试历史失败，请稍后重试')
@@ -653,29 +680,76 @@ const viewExamHistory = async () => {
 
 const viewExamResult = async (record: any) => {
   try {
-    // 获取考试详情
-    const examResponse = await axios.get(`/api/exams/${record.examId}`)
-    currentExam.value = examResponse.data.data
+    console.log('查看考试结果:', record)
+    console.log('考试ID:', record.examId)
+    console.log('记录ID:', record.recordId)
 
-    // 获取考试记录详情
-    const recordResponse = await axios.get(`/api/exams/records/${record.recordId}`)
-    examRecord.value = recordResponse.data.data
+    // 使用API函数获取考试结果
+    const resultResponse = await getExamResult(record.recordId)
+    console.log('考试结果数据:', resultResponse)
 
-    // 获取题目和答案
-    const questionsResponse = await axios.get(`/api/exams/${record.examId}/questions`)
-    questions.value = questionsResponse.data.data || []
+    if (resultResponse && resultResponse.data) {
+      // 设置考试信息
+      currentExam.value = resultResponse.data.exam
+      console.log('设置考试信息:', currentExam.value)
 
-    // 获取用户答案
-    const answersResponse = await axios.get(`/api/exams/records/${record.recordId}/answers`)
-    const answers = answersResponse.data.data || []
+      // 设置考试记录
+      examRecord.value = resultResponse.data.record
+      console.log('设置考试记录:', examRecord.value)
 
-    // 设置用户答案
-    userAnswers.value = {}
-    answers.forEach((answer: any) => {
-      userAnswers[answer.questionId] = answer.userAnswer
-    })
+      // 从答案中提取题目信息
+      const answers = resultResponse.data.answers || []
+      console.log('答案数据:', answers)
 
-    showHistory.value = false
+      if (answers.length > 0) {
+        // 将答案转换为题目格式
+        questions.value = answers.map((answer: any) => ({
+          questionId: answer.questionId,
+          questionContent: answer.questionContent,
+          questionType: answer.questionType,
+          options: answer.options,
+          correctAnswer: answer.correctAnswer,
+          analysis: answer.analysis,
+          // 添加答案信息
+          userAnswer: answer.userAnswer,
+          isCorrect: answer.isCorrect,
+          score: answer.score,
+          answerId: answer.answerId
+        }))
+
+        console.log('从答案构建的题目:', questions.value)
+
+        // 设置用户答案
+        // 清空现有答案
+        for (const key in userAnswers) {
+          delete userAnswers[key]
+        }
+
+        // 设置新答案
+        answers.forEach((answer: any) => {
+          if (answer.questionId && answer.userAnswer !== undefined) {
+            userAnswers[answer.questionId] = answer.userAnswer
+          }
+        })
+
+        console.log('用户答案设置完成:', userAnswers)
+
+        // 确保考试记录状态正确
+        if (examRecord.value && examRecord.value.status !== undefined) {
+          console.log('考试记录状态:', examRecord.value.status)
+        } else {
+          console.error('考试记录状态无效')
+        }
+
+        showHistory.value = false
+      } else {
+        console.error('答案数据为空')
+        ElMessage.warning('考试答案数据为空，无法显示详细结果')
+      }
+    } else {
+      console.error('获取考试结果失败: 返回数据为空')
+      ElMessage.error('获取考试结果失败，返回数据为空')
+    }
   } catch (error) {
     console.error('获取考试结果失败:', error)
     ElMessage.error('获取考试结果失败，请稍后重试')
@@ -695,6 +769,22 @@ const formatDuration = (seconds: number) => {
   return `${minutes}分${secs}秒`
 }
 
+const calculateDuration = (startTime: number | string, endTime: number | string) => {
+  if (!startTime || !endTime) return '未知'
+
+  const start = typeof startTime === 'string' ? new Date(startTime).getTime() : startTime
+  const end = typeof endTime === 'string' ? new Date(endTime).getTime() : endTime
+
+  // 计算时间差（毫秒）
+  const diff = end - start
+
+  // 转换为秒
+  const seconds = Math.floor(diff / 1000)
+
+  // 使用formatDuration格式化
+  return formatDuration(seconds)
+}
+
 const calculateAccuracy = () => {
   if (!questions.value.length) return 0
 
@@ -709,24 +799,37 @@ const calculateAccuracy = () => {
 }
 
 const isAnswerCorrect = (question: any) => {
+  // 如果答案对象中有isCorrect字段，直接使用
+  const answer = question.answerId ?
+    { questionId: question.questionId, userAnswer: question.userAnswer, isCorrect: question.isCorrect } :
+    null;
+
+  if (answer && answer.isCorrect !== undefined) {
+    return answer.isCorrect === 1;
+  }
+
+  // 如果没有isCorrect字段，则进行手动比较
   const userAnswer = userAnswers[question.questionId]
   if (!userAnswer) return false
+
+  const correctAnswer = question.correctAnswer || question.answer;
+  if (!correctAnswer) return false;
 
   // 选择题直接比较
   if (question.type === 0 || question.questionType === 1) { // 兼容不同的类型值
     // 处理单选题
-    return userAnswer.trim().toUpperCase() === question.answer.trim().toUpperCase()
+    return userAnswer.trim().toUpperCase() === correctAnswer.trim().toUpperCase()
   } else if (question.type === 1 || question.questionType === 4) {
     // 填空题，简单实现为完全匹配（忽略大小写和前后空格）
-    return userAnswer.trim().toLowerCase() === question.answer.trim().toLowerCase()
+    return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
   } else if (question.type === 2 || question.questionType === 5) {
     // 简答题，这里简单实现为完全匹配
     // 实际应用中可能需要更复杂的匹配逻辑，如AI评分
-    return userAnswer.trim() === question.answer.trim()
+    return userAnswer.trim() === correctAnswer.trim()
   } else if (question.questionType === 2) {
     // 多选题，需要比较所有选项
-    const userAnswerArray = userAnswer.split(',').map(a => a.trim().toUpperCase()).sort()
-    const correctAnswerArray = question.answer.split(',').map(a => a.trim().toUpperCase()).sort()
+    const userAnswerArray = userAnswer.split(',').map((a: string) => a.trim().toUpperCase()).sort()
+    const correctAnswerArray = correctAnswer.split(',').map((a: string) => a.trim().toUpperCase()).sort()
 
     if (userAnswerArray.length !== correctAnswerArray.length) return false
 
@@ -737,7 +840,7 @@ const isAnswerCorrect = (question: any) => {
     return true
   } else if (question.questionType === 3) {
     // 判断题
-    return userAnswer.trim().toUpperCase() === question.answer.trim().toUpperCase()
+    return userAnswer.trim().toUpperCase() === correctAnswer.trim().toUpperCase()
   }
 
   return false
@@ -757,11 +860,25 @@ const saveAnswersToStorage = () => {
 }
 
 // 处理多选题答案变更
-const handleMultiSelectChange = (questionId: number) => {
+const handleMultiSelectChange = async (questionId: number) => {
   // 将多选答案数组转换为逗号分隔的字符串，如 "A,B,C"
   const selectedOptions = multiSelectAnswers[questionId] || []
   userAnswers[questionId] = selectedOptions.sort().join(',')
   console.log('多选题答案更新:', questionId, userAnswers[questionId])
+
+  // 保存答案到服务器
+  if (examRecord.value) {
+    try {
+      await submitAnswer({
+        recordId: examRecord.value.recordId,
+        questionId: questionId,
+        userAnswer: userAnswers[questionId]
+      })
+      console.log('保存多选题答案成功:', questionId, userAnswers[questionId])
+    } catch (error) {
+      console.error('保存多选题答案失败:', error)
+    }
+  }
 }
 
 const loadAnswersFromStorage = () => {
