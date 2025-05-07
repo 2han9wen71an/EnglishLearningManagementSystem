@@ -51,7 +51,7 @@
             </el-form-item>
           </el-form>
         </el-card>
-        
+
         <el-card class="mt-20">
           <template #header>
             <div class="card-header">
@@ -89,6 +89,7 @@ import { ElMessage } from 'element-plus'
 import { Message, Calendar, Timer, Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import Cookies from 'js-cookie'
+import { getUserInfo as fetchUserInfoApi, updateUserInfo, changePassword } from '@/api/user'
 
 // 用户信息
 const userInfo = reactive({
@@ -152,27 +153,40 @@ const passwordFormRules = reactive<FormRules>({
 })
 
 // 获取用户信息
-const fetchUserInfo = () => {
-  // 这里应该调用API获取用户信息
-  // 暂时使用模拟数据
-  setTimeout(() => {
-    const userId = Cookies.get('userId') || '1'
-    
-    Object.assign(userInfo, {
-      userId: Number(userId),
-      userName: 'admin',
-      email: 'admin@example.com',
-      avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-      role: 1,
-      createTime: '2023-01-01',
-      lastLoginTime: '2023-05-01'
-    })
-    
-    // 填充表单
-    userForm.userName = userInfo.userName
-    userForm.email = userInfo.email
-    userForm.avatar = userInfo.avatar
-  }, 500)
+const fetchUserInfo = async () => {
+  try {
+    const userId = Cookies.get('userId')
+    if (!userId) {
+      ElMessage.error('未找到用户ID，请重新登录')
+      return
+    }
+
+    const response = await fetchUserInfoApi(Number(userId))
+    if (response.success && response.data) {
+      const userData = response.data
+
+      // 更新用户信息
+      Object.assign(userInfo, {
+        userId: userData.userId,
+        userName: userData.userName,
+        email: userData.email,
+        avatar: userData.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+        role: userData.role,
+        createTime: userData.createTime || '未知',
+        lastLoginTime: userData.lastLoginTime || '未知'
+      })
+
+      // 填充表单
+      userForm.userName = userInfo.userName
+      userForm.email = userInfo.email
+      userForm.avatar = userInfo.avatar
+    } else {
+      ElMessage.error(response.message || '获取用户信息失败')
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    ElMessage.error('获取用户信息失败，请稍后重试')
+  }
 }
 
 // 头像上传相关
@@ -197,16 +211,31 @@ const beforeAvatarUpload = (file: any) => {
 // 提交用户表单
 const submitUserForm = async () => {
   if (!userFormRef.value) return
-  
-  await userFormRef.value.validate((valid, fields) => {
+
+  await userFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 这里应该调用API更新用户信息
-      ElMessage.success('保存成功')
-      
-      // 更新本地显示
-      userInfo.userName = userForm.userName
-      userInfo.email = userForm.email
-      userInfo.avatar = userForm.avatar
+      try {
+        // 调用API更新用户信息
+        const response = await updateUserInfo(userInfo.userId, {
+          userName: userForm.userName,
+          email: userForm.email,
+          avatar: userForm.avatar
+        })
+
+        if (response.success) {
+          ElMessage.success('保存成功')
+
+          // 更新本地显示
+          userInfo.userName = userForm.userName
+          userInfo.email = userForm.email
+          userInfo.avatar = userForm.avatar
+        } else {
+          ElMessage.error(response.message || '更新用户信息失败')
+        }
+      } catch (error) {
+        console.error('更新用户信息失败:', error)
+        ElMessage.error('更新用户信息失败，请稍后重试')
+      }
     } else {
       console.log('表单验证失败', fields)
     }
@@ -216,16 +245,30 @@ const submitUserForm = async () => {
 // 提交密码表单
 const submitPasswordForm = async () => {
   if (!passwordFormRef.value) return
-  
-  await passwordFormRef.value.validate((valid, fields) => {
+
+  await passwordFormRef.value.validate(async (valid, fields) => {
     if (valid) {
-      // 这里应该调用API修改密码
-      ElMessage.success('密码修改成功')
-      
-      // 清空表单
-      passwordForm.oldPassword = ''
-      passwordForm.newPassword = ''
-      passwordForm.confirmPassword = ''
+      try {
+        // 调用API修改密码
+        const response = await changePassword(userInfo.userId, {
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
+        })
+
+        if (response.success) {
+          ElMessage.success('密码修改成功')
+
+          // 清空表单
+          passwordForm.oldPassword = ''
+          passwordForm.newPassword = ''
+          passwordForm.confirmPassword = ''
+        } else {
+          ElMessage.error(response.message || '密码修改失败')
+        }
+      } catch (error) {
+        console.error('密码修改失败:', error)
+        ElMessage.error('密码修改失败，请稍后重试')
+      }
     } else {
       console.log('表单验证失败', fields)
     }

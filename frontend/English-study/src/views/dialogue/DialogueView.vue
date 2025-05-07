@@ -622,41 +622,32 @@ const loadScenarios = async () => {
     console.error('加载对话场景出错:', error)
     ElMessage.error('获取对话场景失败，请稍后重试')
 
-    // 加载失败时使用备用数据
-    scenarios.value = [
-      {
-        scenarioId: 1,
-        scenarioName: 'Airport Check-in',
-        description: 'You are at the airport and need to check in for your flight. Talk to the airline staff.',
-        difficultyLevel: 1,
-        initialPrompt: 'You need to check in for your flight. Ask about your seat, baggage allowance, etc.',
-        initialMessage: 'Hello, welcome to the airline check-in counter. How may I help you today?'
-      },
-      {
-        scenarioId: 2,
-        scenarioName: 'Hotel Reservation',
-        description: 'You need to book a hotel room and are talking to the receptionist.',
-        difficultyLevel: 1,
-        initialPrompt: 'You need to book a hotel room. Ask about room types, prices, facilities, etc.',
-        initialMessage: 'Good day! Welcome to our hotel. How can I assist you with your reservation today?'
-      },
-      {
-        scenarioId: 3,
-        scenarioName: 'Restaurant Ordering',
-        description: 'You are at a restaurant and need to order food from the waiter.',
-        difficultyLevel: 1,
-        initialPrompt: 'You are hungry and want to order food. Ask about the menu, specials, etc.',
-        initialMessage: 'Hello and welcome to our restaurant! Would you like to see our menu or hear about today\'s specials?'
-      },
-      {
-        scenarioId: 4,
-        scenarioName: 'Job Interview',
-        description: 'You are attending a job interview for a position you applied for.',
-        difficultyLevel: 2,
-        initialPrompt: 'You are being interviewed for a job. Answer questions about your experience and skills.',
-        initialMessage: 'Thank you for coming in today. Could you start by telling me a bit about yourself and your background?'
-      }
-    ]
+    // 加载失败时尝试再次请求
+    ElMessage.info('正在重新尝试获取对话场景...')
+
+    try {
+      // 再次尝试获取对话场景
+      setTimeout(async () => {
+        try {
+          const retryResponse = await getScenarioList()
+          if (retryResponse && retryResponse.data && Array.isArray(retryResponse.data)) {
+            scenarios.value = retryResponse.data.map(scenario => ({
+              ...scenario,
+              initialPrompt: scenario.initialPrompt || '请开始对话...',
+              initialMessage: scenario.initialMessage || `您好，欢迎来到${scenario.scenarioName}场景。`
+            }))
+          } else {
+            // 如果再次失败，显示错误消息
+            ElMessage.error('无法获取对话场景，请刷新页面重试')
+          }
+        } catch (retryError) {
+          console.error('重新加载对话场景失败:', retryError)
+          ElMessage.error('无法获取对话场景，请刷新页面重试')
+        }
+      }, 3000)
+    } catch (retrySetupError) {
+      console.error('设置重试失败:', retrySetupError)
+    }
   }
 }
 

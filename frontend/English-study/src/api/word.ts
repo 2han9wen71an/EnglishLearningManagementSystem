@@ -26,6 +26,15 @@ export function getWordDetail(wordId: number) {
   })
 }
 
+// 通过单词名称查询单词
+export function getWordByName(wordName: string) {
+  return request({
+    url: '/words/search',
+    method: 'get',
+    params: { query: wordName, size: 1 }
+  })
+}
+
 // 标记单词为已记住
 export function markWordAsRemembered(wordId: number) {
   return request({

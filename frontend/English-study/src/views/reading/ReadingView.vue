@@ -73,9 +73,6 @@
             <div class="card-header">
               <span>{{ currentBook.bookName }}</span>
               <div class="header-actions">
-                <el-tooltip content="添加书签" placement="top">
-                  <el-button :icon="Star" circle @click="addBookmark" />
-                </el-tooltip>
                 <el-tooltip content="调整字体大小" placement="top">
                   <el-dropdown trigger="click" @command="changeFontSize">
                     <el-button :icon="Edit" circle />
@@ -133,10 +130,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Reading, Picture, Star, Edit } from '@element-plus/icons-vue'
+import { Reading, Picture, Edit } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { getWordByName } from '@/api/word'
+import { generateWordCard } from '@/api/wordcard'
+import { getUserId } from '@/utils/auth'
 
 // 数据
 const loading = ref(true)
@@ -217,10 +217,6 @@ const changeFontSize = (size: string) => {
   fontSizeClass.value = `font-${size}`
 }
 
-const addBookmark = () => {
-  ElMessage.success('书签添加成功')
-}
-
 // 生词查询
 const lookupWord = async (word: string) => {
   selectedWord.value = word
@@ -228,34 +224,74 @@ const lookupWord = async (word: string) => {
   wordDialogVisible.value = true
 
   try {
-    // 这里应该调用API获取单词详情
-    // 模拟API调用
-    setTimeout(() => {
-      wordDetail.phonetic = 'ɪɡˈzɑːmpl'
-      wordDetail.meanings = [
-        {
-          partOfSpeech: 'n.',
-          definition: '例子，样本',
-          example: 'This is an example of how the system works.'
-        },
-        {
-          partOfSpeech: 'v.',
-          definition: '作为...的例子',
-          example: 'The teacher\'s behavior exampled dedication to the students.'
-        }
-      ]
-      wordLoading.value = false
-    }, 1000)
+    // 调用API获取单词详情
+    const response = await getWordByName(word)
+
+    if (response.success && response.data && response.data.list && response.data.list.length > 0) {
+      const wordData = response.data.list[0]
+
+      // 解析音标
+      wordDetail.phonetic = wordData.audio || ''
+
+      // 解析释义
+      wordDetail.meanings = []
+      if (wordData.explanation) {
+        // 简单处理释义，实际情况可能需要更复杂的解析
+        wordDetail.meanings.push({
+          partOfSpeech: '',
+          definition: wordData.explanation,
+          example: wordData.example || ''
+        })
+      }
+    } else {
+      // 如果API没有返回结果，显示默认信息
+      wordDetail.phonetic = ''
+      wordDetail.meanings = [{
+        partOfSpeech: '',
+        definition: '未找到该单词的释义',
+        example: ''
+      }]
+    }
   } catch (error) {
     console.error('查询单词失败:', error)
     ElMessage.error('查询单词失败，请稍后重试')
+
+    // 出错时显示默认信息
+    wordDetail.phonetic = ''
+    wordDetail.meanings = [{
+      partOfSpeech: '',
+      definition: '查询失败，请稍后重试',
+      example: ''
+    }]
+  } finally {
     wordLoading.value = false
   }
 }
 
-const addToWordCard = () => {
-  ElMessage.success(`已将 ${selectedWord.value} 添加到单词卡片`)
-  wordDialogVisible.value = false
+const addToWordCard = async () => {
+  try {
+    const userId = getUserId()
+    if (!userId) {
+      ElMessage.warning('请先登录后再添加单词卡片')
+      return
+    }
+
+    // 调用API生成单词卡片
+    const response = await generateWordCard({
+      word: selectedWord.value,
+      userId: Number(userId)
+    })
+
+    if (response.success) {
+      ElMessage.success(`已将 ${selectedWord.value} 添加到单词卡片`)
+      wordDialogVisible.value = false
+    } else {
+      ElMessage.error(response.message || '添加单词卡片失败')
+    }
+  } catch (error) {
+    console.error('添加单词卡片失败:', error)
+    ElMessage.error('添加单词卡片失败，请稍后重试')
+  }
 }
 
 // 初始化
