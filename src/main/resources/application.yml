@@ -23,13 +23,7 @@ spring:
           ssl:
             enable: true
 
-  thymeleaf:
-    cache: false
-    check-template-location: on
-    prefix: classpath:/templates/
-    suffix: .html
-    servlet:
-      content-type: text/html
+
 
   devtools:
     restart:

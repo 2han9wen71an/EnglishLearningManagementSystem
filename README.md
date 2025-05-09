@@ -1,20 +1,19 @@
-<h1 align="center">学习英语管理系统</h1>
+<h1 align="center">英语知识应用网站系统</h1>
 
 <p align="center">
 	<img src="https://img.shields.io/badge/jdk-1.8-orange.svg"/>
     <img src="https://img.shields.io/badge/springboot-2.x-blue.svg"/>
+    <img src="https://img.shields.io/badge/vue-3.x-green.svg"/>
+    <img src="https://img.shields.io/badge/element--plus-2.x-blue.svg"/>
     <img src="https://img.shields.io/badge/maven-3.x-blue.svg"/>
-    <img src="https://img.shields.io/badge/html-5.x-lightgrey.svg"/>
 </p>
 
 ## 简介
-> 用户登录地址: http://localhost:8080/
+> 后端API地址: http://localhost:8080/api/
 >
-> 用户名: admin@example.com   密码: 123456
+> 前端地址: http://localhost:3000/
 >
-> 管理员登录地址: http://localhost:8080/toAdmin
->
-> 用户名: admin@example.com   密码: 123456
+> 测试账号: admin@example.com   密码: 123456
 
 ## 新功能使用指南
 
@@ -55,34 +54,41 @@
 
 
 **本项目用到的技术和框架**<br>
-1.项目构建：Maven<br>
-2.web框架：Springboot<br>
-3.数据库ORM：Mybatis<br>
-4.数据库：MySQL<br>
-5.前端框架：BootStrap<br>
-6.模板引擎：Thymeleaf<br>
-7.文章展示：Editor.md<br>
-8.AI服务：DeepSeek API<br>
-9.语音识别：Web Speech API<br>
-## 环境
+1. 后端技术：
+   - Spring Boot 2.x
+   - MyBatis
+   - MySQL
+   - JWT认证
+   - RESTful API
+   - DeepSeek API (AI服务)
+
+2. 前端技术：
+   - Vue 3
+   - Element Plus
+   - Axios
+   - Vue Router
+   - Pinia (状态管理)
+   - Web Speech API (语音识别)
+## 开发环境
 
 - <b>IntelliJ IDEA 2025.01</b>
-
-- <b>Mysql 5.7.26</b>
-
-- <b>Maven</b>
-
+- <b>Visual Studio Code</b>
+- <b>MySQL 5.7.26</b>
+- <b>Maven 3.x</b>
 - <b>JDK 1.8</b>
+- <b>Node.js 18+</b>
+- <b>npm 9+</b>
 
 ## 功能介绍
-本学习系统分为注册登录模块，公告展示模块，背单词模块，听力练习模块，阅读书籍模块，每日一句模块，智能单词卡片生成器模块，情景对话模拟模块，AI作文批改模块，语音实时评测模块，个人中心模块，以及后台管理模块。
+本英语知识应用网站系统采用前后端分离架构，分为注册登录模块，公告展示模块，背单词模块，听力练习模块，阅读书籍模块，每日一句模块，智能单词卡片生成器模块，情景对话模拟模块，AI作文批改模块，语音实时评测模块，个人中心模块，以及后台管理模块。
 #### 登录注册模块
 - 登录功能
-    - 验证信息：输入邮箱与密码，如果正确则进入网站首页，如果错误则提示错误信息
-    - 登录拦截：在进入网站页面之前，系统会检测用户是否带有Session，如果没有则没有权限进入其他页面
+    - 验证信息：输入邮箱与密码，如果正确则返回JWT令牌并进入网站首页，如果错误则提示错误信息
+    - 登录拦截：API请求会验证JWT令牌，未授权请求将被拒绝
+    - 单点登录：支持前台和管理后台的单点登录
 - 注册功能
     - 新用户可以输入邮箱与密码进行注册，提交信息后返回登录页面提示去邮箱激活
-    - 系统通过QQ邮箱服务器发送给新用户，新用户点击收到激活网站进行注册
+    - 系统通过邮箱服务器发送激活邮件给新用户，新用户点击激活链接完成注册
 #### 公告展示模块
 - 网站首页会展示管理员发布的公告
 - 用户可以查看发布的历史公告
@@ -139,6 +145,7 @@
 - 管理员可以进入后台，对系统的用户，单词，书籍，公告进行管理
 - 管理员可以查看和管理用户提交的作文和语音评测记录
 - 管理员可以初始化作文和语音评测相关数据库
+- 管理员可以查看系统使用统计数据和用户学习进度
 
 ## 技术亮点
 
@@ -147,15 +154,18 @@
 - 使用FLUX.1-schnell模型进行高质量图像生成
 - 实现了智能化学习辅助功能，提供个性化反馈
 - 配置化模型管理，支持灵活切换不同AI模型
+- 异步评分机制，提高系统响应速度
 
 ### 2. 前端技术
+- 使用Vue 3的Composition API实现高效组件开发
 - 使用Web Speech API实现语音录制和识别
-- 使用JavaScript实现实时交互和动态内容展示
+- 使用Element Plus组件库构建现代化UI界面
 - 响应式设计，适配不同设备
 - 支持HTML富文本渲染，提升用户体验
 
 ### 3. 后端架构
 - 基于SpringBoot的RESTful API设计
+- JWT认证实现安全的前后端通信
 - 使用MyBatis进行数据库操作
 - 模块化设计，便于扩展和维护
 - 集成多种外部API服务，实现功能丰富的学习平台
@@ -163,5 +173,6 @@
 ### 4. 创新功能
 - 智能单词卡片生成器：结合AI图像生成和文本生成技术
 - 情景对话模拟：提供真实场景的语言练习环境
-- Markdown到HTML的自动转换：优化内容展示
+- 简答题AI评分：结合人工确认的混合评分机制
+- 前后端分离架构：提高系统性能和用户体验
 

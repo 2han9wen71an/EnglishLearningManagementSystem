@@ -1,51 +1,54 @@
 package com.chun.myspringboot.util;
 
-import com.chun.myspringboot.pojo.Grade;
 import com.chun.myspringboot.pojo.Word;
 import com.chun.myspringboot.service.Impl.WordServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 调用DataUtils处理数据生成百分比，
- * 然后，往页面传值
+ * 调用DataUtils处理数据生成百分比
+ * 前后端分离后，返回数据而不是Model
  */
-@Controller
+@Component
 public class ProgressUtils {
    @Autowired
-    WordServiceImpl wordService;
+   private WordServiceImpl wordService;
 
    @Autowired
-   DataUtils dataUtils;
-    public void Progress(Model model,Integer grade){
+   private DataUtils dataUtils;
 
-        int Remember = wordService.queryRememberNumberByGrade(grade);
-        int Number = wordService.queryAllWordNumberByGrade(grade);
+   /**
+    * 获取学习进度数据
+    * @param grade 年级
+    * @return 包含进度百分比的Map
+    */
+   public Map<String, String> getProgress(Integer grade) {
+        int remember = wordService.queryRememberNumberByGrade(grade);
+        int total = wordService.queryAllWordNumberByGrade(grade);
         int study = wordService.queryStudyNumberByGrade(grade);
-        String studypercent = dataUtils.percent(study, Number);
-        String percent = dataUtils.percent(Remember, Number);
-        String unpercent = dataUtils.unpercent(Remember, Number);
 
-        model.addAttribute("remember",percent);
-        model.addAttribute("unremembered",unpercent);
-        model.addAttribute("study",studypercent);
+        String studyPercent = dataUtils.percent(study, total);
+        String rememberPercent = dataUtils.percent(remember, total);
+        String unrememberPercent = dataUtils.unpercent(remember, total);
 
-        return;
+        Map<String, String> progressData = new HashMap<>();
+        progressData.put("remember", rememberPercent);
+        progressData.put("unremembered", unrememberPercent);
+        progressData.put("study", studyPercent);
+
+        return progressData;
     }
-        //得到收藏信息
-        public void getCollection(Model model,Word word){
 
-            //查询是否收藏过单词
+    /**
+     * 获取单词收藏状态
+     * @param word 单词对象
+     * @return 收藏状态
+     */
+    public String getCollectionStatus(Word word) {
         Integer collection = word.getCollection();
-        if (collection==0){
-            model.addAttribute("msg","加入收藏");
-        }else {
-            model.addAttribute("msg","已经收藏");
-        }
+        return collection == 0 ? "加入收藏" : "已经收藏";
     }
-
-
-
 }

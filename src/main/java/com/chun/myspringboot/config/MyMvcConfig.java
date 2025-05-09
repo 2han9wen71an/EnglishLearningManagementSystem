@@ -8,14 +8,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class MyMvcConfig implements WebMvcConfigurer {
-    //跳转页面
+    // 前后端分离后不再需要视图控制器
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addViewController("/").setViewName("index");
-        registry.addViewController("/index.html").setViewName("index");
-        registry.addViewController("/user/login.html").setViewName("index");
-        registry.addViewController("/main.html").setViewName("main");
-        registry.addViewController("/register.html").setViewName("user/register/page-register");
+        // 不再配置视图映射，由前端路由处理
     }
 
     //配置静态资源处理器

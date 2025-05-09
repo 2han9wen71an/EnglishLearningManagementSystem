@@ -1,13 +1,13 @@
 package com.chun.myspringboot.util;
 
-import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Component;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-@Controller
+@Component
 public class DataUtils {
 
     //得到百分比数字
